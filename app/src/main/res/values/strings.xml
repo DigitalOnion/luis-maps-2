@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">Luis Maps 2</string>
+    <string name="app_title">Maps 2.0</string>
+
+    <string name="cancel_button_face">Cancel</string>
+    <string name="login_button_face">Login</string>
+
+    <string name="login_header">Login to view Luis\' Maps</string>
+    <string name="login_google_button_face">Login with Google</string>
+    <string name="login_email_password_button_face">Login with Email/Password</string>
+    <string name="login_failed_message">Google Login Failed, try again.</string>
+    <string name="login_success_message">Hi %1$s, you are logged in!</string>
+    <string name="default_web_client_id">unknown</string>
+
+    <string name="login_email">Login email</string>
+    <string name="login_email_instructions">Enter the email to login</string>
+    <string name="password_email">Login password</string>
+    <string name="password_email_instructions">Enter your password</string>
+
+    <string name="title_activity_maps">Luis\' Map</string>
 </resources>
