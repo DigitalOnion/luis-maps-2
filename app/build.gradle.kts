@@ -1,3 +1,23 @@
+// NOTE:
+// I created this project using Android Studio Giraffe. I also wanted
+// to learn and practice with Compose. When I added the Room Database
+// the project would no longer compile. I followed the Android documentation
+// added Room using the bom and enabling KSP. It wouldn't work.
+//
+// after researching for three days. I came across this article:
+//
+// https://stackoverflow.com/questions/77082054/jetpack-compose-impossible-to-use-room-dependencies-problem/77083482#77083482
+//
+// other references:
+// https://developer.android.com/jetpack/compose/bom/bom-mapping
+// https://developer.android.com/jetpack/androidx/releases/room
+// https://developer.android.com/build/migrate-to-ksp
+// and many others...
+//
+// it works now.
+//
+// Luis.
+//
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
@@ -33,12 +53,12 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 
     buildFeatures {
@@ -46,7 +66,7 @@ android {
         viewBinding = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.3"
+        kotlinCompilerExtensionVersion = "1.5.3"
     }
     packaging {
         resources {
@@ -61,7 +81,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation("androidx.activity:activity-compose:1.8.0")
 
-    implementation(platform("androidx.compose:compose-bom:2023.03.00"))
+    implementation(platform("androidx.compose:compose-bom:2023.10.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")

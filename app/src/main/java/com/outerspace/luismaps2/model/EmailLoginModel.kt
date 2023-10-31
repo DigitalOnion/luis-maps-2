@@ -25,8 +25,8 @@ interface EmailLoginDao {
     @Query("select * from email_login where email_name = :targetEmail")
     fun getEmailLogin(targetEmail: String): EmailLogin
 
-    @Query("select :targetPassword = password as passwordMatches from email_login where email_name = :targetEmail")
-    fun doesPasswordMatch(targetEmail: String, targetPassword: String)
+//    @Query("select :targetPassword = password as passwordMatches from email_login where email_name = :targetEmail")
+//    fun doesPasswordMatch(targetEmail: String, targetPassword: String)
 }
 
 @Database(entities = [EmailLogin::class], version = 1)
