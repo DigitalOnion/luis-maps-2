@@ -2,8 +2,21 @@
     <string name="app_name">Luis Maps 2</string>
     <string name="app_title">Maps 2.0</string>
 
+    <string name="login_menu">Login menu</string>
     <string name="cancel_button_face">Cancel</string>
-    <string name="login_button_face">Login</string>
+    <string name="login_button_face">Sign In</string>
+    <string name="signon_button_face">Sign On</string>
+    <string name="update_button_face">Update Password</string>
+
+    <string name="google_sign_in_menu">Google Sign-In</string>
+    <string name="email_sign_in_menu">Email Sign-In</string>
+    <string name="email_sign_on_menu">Email Sign-On</string>
+    <string name="email_update_menu">Email Password Update</string>
+
+    <string name="sign_on_success">Successfully added new user</string>
+    <string name="user_exists">User already exists</string>
+    <string name="password_update_success">Password updated successfully</string>
+    <string name="password_update_failed">Could not update password</string>
 
     <string name="login_header">Login to view Luis\' Maps</string>
     <string name="login_google_button_face">Login with Google</string>
@@ -16,6 +29,8 @@
     <string name="login_email_instructions">Enter the email to login</string>
     <string name="password_email">Login password</string>
     <string name="password_email_instructions">Enter your password</string>
+    <string name="new_password">New Password</string>
+    <string name="new_password_instructions">Enter new password</string>
 
     <string name="title_activity_maps">Luis\' Map</string>
 </resources>

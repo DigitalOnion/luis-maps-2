@@ -3,6 +3,7 @@ package com.outerspace.luismaps2.model
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
+import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.Insert
@@ -22,11 +23,17 @@ interface EmailLoginDao {
     @Insert
     fun insert(login: EmailLogin)
 
-    @Query("select * from email_login where email_name = :targetEmail")
-    fun getEmailLogin(targetEmail: String): EmailLogin
+    @Query("delete from email_login where email_name = :targetEmail")
+    fun delete(targetEmail: String)
 
-//    @Query("select :targetPassword = password as passwordMatches from email_login where email_name = :targetEmail")
-//    fun doesPasswordMatch(targetEmail: String, targetPassword: String)
+    @Query("select count(*) from email_login where email_name = :targetEmail")
+    fun countEmailByName(targetEmail: String): Int
+
+    @Query("select count(*) > 0 as passwordMatches from email_login where email_name = :targetEmail and password = :targetPassword")
+    fun passwordMatch(targetEmail: String, targetPassword: String): Boolean
+
+    @Query("update email_login set password = :newPassword where email_name = :targetEmail and password = :targetPassword")
+    fun updatePassword(targetEmail: String, targetPassword: String, newPassword: String)
 }
 
 @Database(entities = [EmailLogin::class], version = 1)

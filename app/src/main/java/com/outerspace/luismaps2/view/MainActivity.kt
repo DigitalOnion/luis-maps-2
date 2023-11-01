@@ -5,8 +5,6 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,22 +13,24 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,8 +56,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
-import java.io.StringReader
 import java.lang.ref.WeakReference
 
 const val WAIT_TO_OPEN_MAP_ACTIVITY = 1000L
@@ -72,18 +70,27 @@ class MainActivity : ComponentActivity() {
         mainVM = ViewModelProvider(this)[MainViewModel::class.java]
         mainVM.weakActivity = WeakReference(this)
 
-        mainVM.logInFailed.observe(this) {
-            Toast.makeText(this, R.string.login_failed_message, Toast.LENGTH_LONG).show()
+        mainVM.logInSuccess.observe(this) {
+            if (it) {
+                val text = getString(R.string.login_success_message)
+                Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, getString(R.string.login_failed_message), Toast.LENGTH_LONG).show()
+            }
         }
 
         mainVM.currentUser.observe(this) {
-            val text = getString(R.string.login_success_message, it.displayName)
+            val text = getString(R.string.login_success_message, it)
             Toast.makeText(this, text, Toast.LENGTH_LONG).show()
             CoroutineScope(Dispatchers.IO).launch {
                 delay(WAIT_TO_OPEN_MAP_ACTIVITY)
                 val intent = Intent(this@MainActivity.baseContext, MapsActivity::class.java)
                 startActivity(intent)
             }
+        }
+
+        mainVM.message.observe(this) {
+            Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }
 
         setContent {
@@ -102,6 +109,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MainLoginScreen(modifier: Modifier = Modifier) {
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+        var showMenu by remember { mutableStateOf(false) }
 
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -119,7 +127,35 @@ class MainActivity : ComponentActivity() {
                             overflow = TextOverflow.Ellipsis
                         )
                     },
-
+                    actions = {
+                        IconButton(onClick = { showMenu = !showMenu }) {
+                            Icon(imageVector = Icons.Default.Menu, stringResource(id = R.string.login_menu))
+                        }
+                        DropdownMenu(expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                        ) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.google_sign_in_menu)) },
+                                onClick = { showMenu = false
+                                    mainVM.mutableLoginButtons.value = true
+                                    mainVM.googleSignIn()
+                                })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.email_sign_in_menu)) },
+                                onClick = { showMenu = false
+                                    mainVM.mutableLoginButtons.value = false
+                                    mainVM.mutableEmailSignIn.value = true
+                                })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.email_sign_on_menu)) },
+                                onClick = { showMenu = false
+                                    mainVM.mutableLoginButtons.value = false
+                                    mainVM.mutableEmailSignOn.value = true
+                                })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.email_update_menu)) },
+                                onClick = { showMenu = false
+                                    mainVM.mutableLoginButtons.value = false
+                                    mainVM.mutableUpdatePassword.value = true
+                                })
+                        }
+                    },
                     scrollBehavior = scrollBehavior,
                 )
             },
@@ -195,40 +231,88 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun MainEmailLogin(modifier: Modifier = Modifier) {
-        var login_email by remember { mutableStateOf("") }
-        var login_password by remember { mutableStateOf("") }
+        var loginEmail by remember { mutableStateOf("") }
+        var loginPassword by remember { mutableStateOf("") }
+        var newPassword by remember { mutableStateOf("")}
+
+        val owner = mainVM.weakActivity.get() ?: return
+
+        var updatePasswordUI by remember { mutableStateOf(false) }  // execution order is important
+        var signOnUI by remember { mutableStateOf(false) }
+        var signInUI by remember { mutableStateOf(true) }
+
+        mainVM.mutableUpdatePassword.observe(owner) { signInUI = false; signOnUI = false; updatePasswordUI = true }
+        mainVM.mutableEmailSignOn.observe(owner) { signInUI = false; signOnUI = true; updatePasswordUI = false }
+        mainVM.mutableEmailSignIn.observe(owner) { signInUI = true; signOnUI = false; updatePasswordUI = false }
 
         Column {
-            OutlinedTextField(value = login_email,
-                onValueChange = { login_email = it },
+            OutlinedTextField(value = loginEmail,
+                onValueChange = { loginEmail = it },
                 label = { Text(text = stringResource(id = R.string.login_email)) },
                 placeholder = { Text(text = stringResource(id = R.string.login_email_instructions)) },
                 colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.White),
                 modifier = modifier.fillMaxWidth()
             )
 
-            OutlinedTextField(value = login_password,
-                onValueChange = { login_password = it},
+            OutlinedTextField(value = loginPassword,
+                onValueChange = { loginPassword = it},
                 label = { Text(text = stringResource(id = R.string.password_email))},
                 placeholder = { Text(text = stringResource(id = R.string.password_email_instructions)) },
                 colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.White),
                 modifier = modifier.fillMaxWidth()
             )
 
+            if (updatePasswordUI) {
+                OutlinedTextField(value = newPassword,
+                    onValueChange = { newPassword = it},
+                    label = { Text(text = stringResource(id = R.string.new_password))},
+                    placeholder = { Text(text = stringResource(id = R.string.new_password_instructions)) },
+                    colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.White),
+                    modifier = modifier.fillMaxWidth()
+                )
+            }
+
             Row(
-                modifier = modifier.fillMaxWidth().padding(top =16.dp),
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
             ) {
                 Button(
-                    modifier = modifier.weight(2F),
+                    modifier = modifier.weight(3F),
                     content = {Text(stringResource(R.string.cancel_button_face))},
                     onClick = { mainVM.mutableLoginButtons.value = true },
                 )
                 Spacer(modifier = modifier.weight(1F))
-                Button(
-                    modifier = modifier.weight(2F),
-                    content = {Text(stringResource(R.string.login_button_face))},
-                    onClick = { mainVM.emailSignIn(login_email, login_password) }
-                )
+                Column(modifier = modifier.weight(6F)) {
+                    if (signInUI) {
+                        Button(
+                            modifier = modifier.fillMaxWidth(),
+                            content = {Text(stringResource(R.string.login_button_face))},
+                            onClick = {
+                                mainVM.emailSignIn(loginEmail, loginPassword) }
+                        )
+                    }
+                    if (signOnUI) {
+                        Button(
+                            modifier = modifier.fillMaxWidth(),
+                            content = { Text(stringResource(R.string.signon_button_face)) },
+                            onClick = { mainVM.emailSignOn(loginEmail, loginPassword) }
+                        )
+                    }
+                    if (updatePasswordUI) {
+                        Button(
+                            modifier = modifier.fillMaxWidth(),
+                            content = { Text(stringResource(R.string.update_button_face)) },
+                            onClick = {
+                                mainVM.emailUpdatePassword(
+                                    loginEmail,
+                                    loginPassword,
+                                    newPassword
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
     }
