@@ -8,14 +8,12 @@ import androidx.activity.result.contract.ActivityResultContracts.StartIntentSend
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.Room
 import com.google.android.gms.auth.api.identity.GetSignInIntentRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.outerspace.luismaps2.R
@@ -115,56 +113,49 @@ class MainViewModel: ViewModel() {
      * Email / Password sign in
      */
 
-    private fun getEmailDb(): EmailLoginDatabase {
-        val context =
-            weakActivity.get()?.applicationContext
-//      return Room.inMemoryDatabaseBuilder(context!!, EmailLoginDatabase::class.java).build()
-        return Room.databaseBuilder(
-            context!!, EmailLoginDatabase::class.java, "email-login.db"
-        ).build()
-    }
+    private lateinit var emailDb: EmailLoginDatabase
+
+    fun setEmailDb(db: EmailLoginDatabase) { emailDb = db }
 
     fun emailSignIn(loginName: String, password: String) {
-        val d = viewModelScope.async(Dispatchers.IO) {          // this runs in Dispatchers IO
-            val dao = getEmailDb().emailLoginDao()
-            dao.passwordMatch(loginName, password)
-        }
         viewModelScope.launch {
-            val b = d.await()                                   // to set value of the mutableLifeData, this runs in the main thread
+            val d = viewModelScope.async(Dispatchers.IO) {
+                val dao = emailDb.emailLoginDao()
+                dao.passwordMatch(loginName, password)
+            }
+            val b = d.await()
             logInSuccess.value = b
             if (b) currentUser.value = "User"
         }
     }
 
     fun emailSignOn(loginName: String, password: String) {
-        val d = viewModelScope.async(Dispatchers.IO) {
-            val dao = getEmailDb().emailLoginDao()
-            if (dao.countEmailByName(loginName) == 0) {
-                dao.insert(EmailLogin(emailName = loginName, password = password))
-                R.string.sign_on_success
-            } else {
-                R.string.user_exists
-            }
-        }
         viewModelScope.launch {
-            val n = d.await()
-            message.value = n
+            val d = viewModelScope.async(Dispatchers.IO) {
+                val dao = emailDb.emailLoginDao()
+                if (dao.countEmailByName(loginName) == 0) {
+                    dao.insert(EmailLogin(emailName = loginName, password = password))
+                    R.string.sign_on_success
+                } else {
+                    R.string.user_exists
+                }
+            }
+            message.value = d.await() // logged In Message
         }
     }
 
     fun emailUpdatePassword(loginName: String, password: String, newPassword: String) {
-        val d = viewModelScope.async(Dispatchers.IO) {
-            val dao = getEmailDb().emailLoginDao()
-            if (dao.countEmailByName(loginName) > 0 && dao.passwordMatch(loginName, password)) {
-                dao.updatePassword(loginName, password, newPassword)
-                R.string.password_update_success
-            } else {
-                R.string.password_update_failed
-            }
-        }
         viewModelScope.launch {
-            val n = d.await()
-            message.value = n
+            val d = viewModelScope.async(Dispatchers.IO) {
+                val dao = emailDb.emailLoginDao()
+                if (dao.countEmailByName(loginName) > 0 && dao.passwordMatch(loginName, password)) {
+                    dao.updatePassword(loginName, password, newPassword)
+                    R.string.password_update_success
+                } else {
+                    R.string.password_update_failed
+                }
+            }
+            message.value = d.await()
         }
     }
 }

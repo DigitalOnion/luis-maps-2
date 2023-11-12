@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <application
         android:name=".MapsApplication"
         android:allowBackup="true"
@@ -13,6 +17,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.LuisMaps2"
         tools:targetApi="34">
+        <activity
+            android:name=".view.LocationsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_locations"
+            android:theme="@style/Theme.LuisMaps2" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -25,15 +34,14 @@
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".view.MapsActivity"
             android:exported="false"
             android:label="@string/title_activity_maps" />
-
     </application>
 
 </manifest>
