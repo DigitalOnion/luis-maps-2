@@ -2,7 +2,9 @@ package com.outerspace.luismaps2.view
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
@@ -26,15 +28,22 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SnackbarVisuals
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SnapshotMutationPolicy
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
@@ -46,6 +55,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
+import com.google.android.gms.maps.CameraUpdate
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.CameraUpdateFactory.newCameraPosition
 
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.maps.android.compose.CameraPositionState
@@ -54,16 +66,20 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.outerspace.luismaps2.R
+import com.outerspace.luismaps2.location.GeofenceViewModel
 import com.outerspace.luismaps2.location.LOCATION_DATABASE_NAME
+import com.outerspace.luismaps2.location.LOG_TAG
 import com.outerspace.luismaps2.ui.theme.LuisMaps2Theme
 import com.outerspace.luismaps2.location.LONDON_LOCATION
 import com.outerspace.luismaps2.location.LocationDatabase
 import com.outerspace.luismaps2.location.LocationViewModel
 import com.outerspace.luismaps2.location.WorldLocation
+import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 
 class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
     private lateinit var locationVM: LocationViewModel
+    private lateinit var geofenceVM: GeofenceViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,9 +91,8 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                 this.applicationContext, LocationDatabase::class.java, LOCATION_DATABASE_NAME
             ).build()
 
-        locationVM.mutablePermissionGranted.observe(this) {
-            if (it) locationVM.requestCurrentWorldLocation(this.baseContext)
-        }
+        geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
+        geofenceVM.weakActivity = WeakReference(this)
 
         setContent {
             LuisMaps2Theme {
@@ -93,17 +108,24 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
 
     override fun onStart() {
         super.onStart()
-        locationVM.requestCurrentWorldLocation(this)
+        locationVM.startCurrentLocationFlow(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        locationVM.mutableDeletedPoi.value = LONDON_LOCATION // value is irrelevant, it triggers recomposition
     }
 
     // NOTE: I use these MapParamsInterface and DialogParamsInterface to hoist various
     // objects and functions at once.
     interface MapParamsInterface {
         var forceRecomposeCount: MutableState<Int>
-        var currentLocation: WorldLocation
+        var currentLocation: MutableState<WorldLocation>
+        var cameraPositionState:CameraPositionState
         fun onMapClick(clickedLocation: WorldLocation)
         fun getValidPoiList(): List<WorldLocation>
         fun editLocation(location: WorldLocation)
+        fun launchSnackBar()
     }
 
     interface DialogParamsInterface {
@@ -126,16 +148,29 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         val dialogParams = object: DialogParamsInterface {
             override var poi: MutableState<WorldLocation> = remember { mutableStateOf(LONDON_LOCATION, policy()) }
             override fun onClickCreatePoi(poi: WorldLocation) {
+                poi.current = false
                 locationVM.addLocation(poi)
+                geofenceVM.add(poi)
             }
             override fun showListener(show: Boolean) {
                 showFormDialog = show
             }
         }
 
+        val scope = rememberCoroutineScope()
+        val snackBarHostState = remember { SnackbarHostState() }
+
+        val snackBarVisuals = object: SnackbarVisuals {
+            override val message = stringResource(R.string.test_delete_all_poi)
+            override val actionLabel = stringResource(R.string.yes_button_face)
+            override val withDismissAction = true
+            override val duration = SnackbarDuration.Short
+        }
+
         val mapParams = object: MapParamsInterface {
             override var forceRecomposeCount: MutableState<Int> = remember { mutableIntStateOf(0) }  // forces to recompose.
-            override var currentLocation: WorldLocation = LONDON_LOCATION
+            override var currentLocation: MutableState<WorldLocation> = remember { mutableStateOf(LONDON_LOCATION)}
+            override var cameraPositionState: CameraPositionState = CameraPositionState()
             override fun onMapClick(clickedLocation: WorldLocation) {
                 dialogParams.poi.value = clickedLocation
                 showFormDialog = true
@@ -147,11 +182,20 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                 dialogParams.poi.value = location
                 showFormDialog = true
             }
-        }
-
-        locationVM.mutableCurrentLocation.observe(this) {
-            mapParams.currentLocation = it
-            mapParams.forceRecomposeCount.value += 1
+            override fun launchSnackBar() {
+                scope.launch {
+                    when(snackBarHostState.showSnackbar(snackBarVisuals)) {
+                        SnackbarResult.ActionPerformed -> {
+                            locationVM.deleteAllLocations()
+                            forceRecomposeCount.value += 1
+                            Toast.makeText(this@MapsActivity, this@MapsActivity.getText(R.string.all_locations_were_deleted), Toast.LENGTH_SHORT).show()
+                        }
+                        SnackbarResult.Dismissed -> {
+                            Toast.makeText(this@MapsActivity, this@MapsActivity.getText(R.string.no_locations_deleted), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
         }
 
         locationVM.mutableAddedPoi.observe(this) {
@@ -159,7 +203,12 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
             mapParams.forceRecomposeCount.value += 1
         }
 
+        locationVM.mutableDeletedPoi.observe(this) {
+            mapParams.forceRecomposeCount.value += 1
+        }
+
         Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
@@ -182,12 +231,30 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                                     val intent = Intent(this@MapsActivity.baseContext, LocationsActivity::class.java)
                                     startActivity(intent)
                                 })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.delete_all_poi))},
+                                onClick = {
+                                    showMenu = false
+                                    mapParams.launchSnackBar()
+                                }
+                            )
                         }
                     },
                 )
             },
         ) { innerPadding ->
             innerPadding.toString()
+
+            locationVM.mutableCurrentLocation.observe(this) {
+                Log.d(LOG_TAG, it.toString())
+                locationVM.poiSet.removeIf { poi -> poi.current }
+                it.current = true
+                locationVM.poiSet.add(it)    // current location is shown but does not get stored
+                mapParams.currentLocation = mutableStateOf(it)
+                val update = newCameraPosition(CameraPosition(it.getLatLng(), 18F, 0F, 0F))
+                mapParams.cameraPositionState.move(update)
+                mapParams.forceRecomposeCount.value += 1
+            }
+
             mapsScreen(modifier, mapParams)
             if (showFormDialog)
                 inputFormDialog(modifier, dialogParams)
@@ -259,13 +326,10 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
     @Composable
     private fun mapsScreen(modifier: Modifier = Modifier, mapParams: MapParamsInterface) {
         if (mapParams.forceRecomposeCount.value > 0) {
-            val cameraPositionState: CameraPositionState = rememberCameraPositionState {
-                position = CameraPosition.fromLatLngZoom(mapParams.currentLocation.getLatLng(), 15f)
-            }
 
             GoogleMap(
                 modifier = modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
+                cameraPositionState = mapParams.cameraPositionState,
                 onMapClick = { mapParams.onMapClick(WorldLocation(it)) }
             ) {
                 for (location in mapParams.getValidPoiList()) {

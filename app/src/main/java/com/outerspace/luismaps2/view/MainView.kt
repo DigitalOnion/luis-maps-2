@@ -19,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -57,7 +58,7 @@ class MainView(owner: ViewModelStoreOwner) {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun MainLoginScreen(modifier: Modifier = Modifier) {
+    fun mainLoginScreen(modifier: Modifier = Modifier) {
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
         var showMenu by remember { mutableStateOf(false) }
 
@@ -110,12 +111,12 @@ class MainView(owner: ViewModelStoreOwner) {
                 )
             },
         ) { innerPadding ->
-            LoginScreen(modifier, innerPadding)
+            loginScreen(modifier, innerPadding)
         }
     }
 
     @Composable
-    private fun LoginScreen(modifier: Modifier = Modifier,
+    private fun loginScreen(modifier: Modifier = Modifier,
                             innerPadding: PaddingValues = PaddingValues(0.dp)
     ) {
         var showLoginButtons by remember { mutableStateOf(true) }
@@ -138,18 +139,18 @@ class MainView(owner: ViewModelStoreOwner) {
             .fillMaxSize()
             .padding(32.dp)) {
             Column(Modifier.weight(1F)) {
-                Title3D(modifier)
+                title3D(modifier)
             }
             if (showLoginButtons) {
-                MainLoginButtons(modifier)
+                mainLoginButtons(modifier)
             } else {
-                MainEmailLogin(modifier)
+                mainEmailLogin(modifier)
             }
         }
     }
 
     @Composable
-    private fun MainLoginButtons(modifier: Modifier = Modifier) {
+    private fun mainLoginButtons(modifier: Modifier = Modifier) {
         Column {
             Text(
                 stringResource(R.string.login_header),
@@ -183,7 +184,7 @@ class MainView(owner: ViewModelStoreOwner) {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun MainEmailLogin(modifier: Modifier = Modifier) {
+    private fun mainEmailLogin(modifier: Modifier = Modifier) {
         var loginEmail by remember { mutableStateOf("") }
         var loginPassword by remember { mutableStateOf("") }
         var newPassword by remember { mutableStateOf("") }
@@ -203,7 +204,11 @@ class MainView(owner: ViewModelStoreOwner) {
                 onValueChange = { loginEmail = it },
                 label = { Text(text = stringResource(id = R.string.login_email)) },
                 placeholder = { Text(text = stringResource(id = R.string.login_email_instructions)) },
-                colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.White),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    disabledContainerColor = Color.White,
+                ),
                 modifier = modifier.fillMaxWidth()
             )
 
@@ -211,7 +216,11 @@ class MainView(owner: ViewModelStoreOwner) {
                 onValueChange = { loginPassword = it},
                 label = { Text(text = stringResource(id = R.string.password_email)) },
                 placeholder = { Text(text = stringResource(id = R.string.password_email_instructions)) },
-                colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.White),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    disabledContainerColor = Color.White,
+                ),
                 modifier = modifier.fillMaxWidth()
             )
 
@@ -220,7 +229,11 @@ class MainView(owner: ViewModelStoreOwner) {
                     onValueChange = { newPassword = it},
                     label = { Text(text = stringResource(id = R.string.new_password)) },
                     placeholder = { Text(text = stringResource(id = R.string.new_password_instructions)) },
-                    colors = TextFieldDefaults.outlinedTextFieldColors(containerColor = Color.White),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        disabledContainerColor = Color.White,
+                    ),
                     modifier = modifier.fillMaxWidth()
                 )
             }
@@ -271,10 +284,10 @@ class MainView(owner: ViewModelStoreOwner) {
     }
 
     @Composable
-    private fun Title3D(modifier: Modifier = Modifier) {
+    private fun title3D(modifier: Modifier = Modifier) {
         Text(
             stringResource(R.string.app_title),
-            modifier = Modifier.padding(vertical = 50.dp),
+            modifier = modifier.padding(vertical = 50.dp),
             style = TextStyle(
                 fontSize = 50.sp,
                 color = Color(0xAAB88032),
@@ -284,7 +297,6 @@ class MainView(owner: ViewModelStoreOwner) {
                     blurRadius = 5f
                 )
             )
-
         )
     }
 

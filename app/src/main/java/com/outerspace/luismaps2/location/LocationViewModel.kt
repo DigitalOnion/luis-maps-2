@@ -1,55 +1,111 @@
 package com.outerspace.luismaps2.location
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.pm.PackageManager
+import android.location.Location
 import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
-import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.CurrentLocationRequest
+import com.google.android.gms.location.Granularity
+import com.google.android.gms.location.LastLocationRequest
+import com.google.android.gms.location.LocationAvailability
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.lang.ref.WeakReference
 
 const val LOCATION_DATABASE_NAME = "location"
+const val LOCATION_REFRESH_PERIOD = 2L * 1000L        // 2 seconds
 val LONDON_LOCATION = WorldLocation (51.5072, 0.1276, "London", "Great City of London")
 
 class LocationViewModel: ViewModel() {
-    private var weakPermissionLauncher: WeakReference<ActivityResultLauncher<Array<String>>> = WeakReference(null)
-    private var weakLocationClient: WeakReference<FusedLocationProviderClient> = WeakReference(null)
-
-    private lateinit var mutablePermissionsMap: MutableLiveData<Map<String, Boolean>>
-
     val poiSet: MutableSet<WorldLocation> = mutableSetOf()
 
-    val mutablePermissionGranted: MutableLiveData<Boolean> = MutableLiveData(false)
     val mutableCurrentLocation: MutableLiveData<WorldLocation> = MutableLiveData()
     val mutableAddedPoi: MutableLiveData<WorldLocation> = MutableLiveData()
     val mutableDeletedPoi: MutableLiveData<WorldLocation> = MutableLiveData()
+    val mutableHasPermissions: MutableLiveData<Boolean> = MutableLiveData()
+
+    private lateinit var locationFlow: Flow<WorldLocation>
 
     var weakActivity: WeakReference<ComponentActivity> = WeakReference(null)
+        @SuppressLint("MissingPermission")
         set(weakActivityArg) {
             field = weakActivityArg
             val activity: ComponentActivity = weakActivityArg.get() ?: return
 
-            weakPermissionLauncher = WeakReference(activity.registerForActivityResult(
-                ActivityResultContracts.RequestMultiplePermissions()
-            ) {
-                mutablePermissionsMap = MutableLiveData(it)
-                mutablePermissionGranted.value = true
-            })
+            // the createRequest and other API is deprecated. I found the new api in: https://tomas-repcik.medium.com/locationrequest-create-got-deprecated-how-to-fix-it-e4f814138764
+            locationFlow = flow {
+                val onSuccess = { it: Location? ->
+                     if (it != null) {
+                        val wl = WorldLocation(it.latitude, it.longitude)
+                        wl.current = true
+                        mutableCurrentLocation.value =wl
+                    }
+                }
 
-            val locationClient = LocationServices.getFusedLocationProviderClient(activity)
-            weakLocationClient = WeakReference(locationClient)
+                val callback = object: LocationCallback() {
+                    override fun onLocationAvailability(availability: LocationAvailability) {}
+                    override fun onLocationResult(lResult: LocationResult) {
+                        super.onLocationResult(lResult)
+                        val l = lResult.lastLocation
+                        if (l != null) {
+                            val wl = WorldLocation(l.latitude, l.longitude)
+                            wl.current = true
+                            mutableCurrentLocation.value = wl
+                        }
+
+                    }
+                }
+
+                fun createCurrentRequest(): CurrentLocationRequest = CurrentLocationRequest
+                    .Builder()
+                    .setDurationMillis(LOCATION_REFRESH_PERIOD)
+                    .setGranularity(Granularity.GRANULARITY_FINE)
+                    .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                    .build()
+
+                fun createLocationRequest(): LocationRequest = LocationRequest
+                    .Builder(LOCATION_REFRESH_PERIOD)
+                    .setGranularity(Granularity.GRANULARITY_FINE)
+                    .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                    .build()
+
+                val context: Context = weakActivity.get()?.applicationContext ?: throw Error("LocationViewModel.WeakActivity is not valid")
+                if (checkPermissions(context)) {
+                    val locationClient = LocationServices.getFusedLocationProviderClient(context)
+                    locationClient.getCurrentLocation(createCurrentRequest(), null)
+                        .addOnSuccessListener(onSuccess)
+                    locationClient.requestLocationUpdates(createLocationRequest(), callback, null)
+                }
+            }
         }
+
+    fun startCurrentLocationFlow(owner: LifecycleOwner) {
+        if (checkPermissions(owner as Context)) {
+            owner.lifecycleScope.launch {
+                locationFlow.collect {
+                    it.current = true
+                    mutableCurrentLocation.value = it
+                }
+            }
+        } else {
+            mutableHasPermissions.value = false
+        }
+    }
 
     var locationDb: LocationDatabase? = null
         set(db) {
@@ -64,40 +120,6 @@ class LocationViewModel: ViewModel() {
                 }
             }
         }
-
-    private lateinit var previousPoi: WorldLocation
-
-    @SuppressLint("MissingPermission")
-    fun requestCurrentWorldLocation(context: Context) {
-        if (isLocationPermissionGranted(context)) {
-            val client = weakLocationClient.get()
-            val lastLocation = client?.lastLocation
-            lastLocation?.addOnSuccessListener {
-                if (it != null) {
-                    val worldLocation = WorldLocation(it.latitude, it.longitude)
-                    if (this::previousPoi.isInitialized) {
-                        poiSet.removeIf { poi -> poi.lat == previousPoi.lat && poi.lon == previousPoi.lon }
-                    }
-                    previousPoi = worldLocation
-                    poiSet.add(worldLocation)    // current location is shown but does not get stored
-                    mutableCurrentLocation.value = worldLocation
-                }
-            }
-        } else {
-            requestLocationPermissions()
-        }
-    }
-
-    private fun isLocationPermissionGranted(context: Context): Boolean {
-        val checkCoarse = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-        val checkFine = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-        return checkCoarse == PackageManager.PERMISSION_GRANTED && checkFine == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun requestLocationPermissions() {
-        val launcher = weakPermissionLauncher.get()
-        launcher?.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-    }
 
     fun addLocation(location: WorldLocation) {
         poiSet.add(location)                    // user's POI are stored
@@ -120,4 +142,11 @@ class LocationViewModel: ViewModel() {
             }
         }
     }
+
+    fun deleteAllLocations() {
+        viewModelScope.launch(Dispatchers.IO) {
+            locationDb!!.worldLocationDao().deleteAll()
+        }
+    }
 }
+

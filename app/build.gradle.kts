@@ -32,7 +32,7 @@ android {
 
     defaultConfig {
         applicationId = "com.outerspace.luismaps2"
-        minSdk = 28
+        minSdk = 29
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -56,8 +56,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-//    testOptions.unitTests.isIncludeAndroidResources = true
 
     kotlinOptions {
         jvmTarget = "17"
@@ -107,8 +105,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.ar:core:1.40.0")
     implementation(platform("androidx.compose:compose-bom:2023.03.00"))
-    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    implementation("androidx.navigation:navigation-runtime-ktx:2.7.5")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
@@ -116,6 +113,9 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.0")
     annotationProcessor("androidx.room:room-compiler:2.6.0")
     implementation("androidx.room:room-ktx:2.6.0")
+
+    // Work Manager
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
 
     // for location services
     implementation("com.google.android.gms:play-services-location:21.0.1")
@@ -127,6 +127,9 @@ dependencies {
     testImplementation("androidx.test:rules:1.5.0")
     testImplementation("org.robolectric:robolectric:4.11.1")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+
+    androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
     androidTestImplementation("androidx.test:core-ktx:1.5.0")
     androidTestImplementation("androidx.test:runner:1.5.2")

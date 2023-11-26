@@ -4,9 +4,11 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,6 +26,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,6 +45,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 private interface LocationParamInterface {
+    fun navigateBack()
+    fun deleteLocations(location: WorldLocation)
     fun toastMessage(message: String)
 }
 
@@ -63,6 +68,13 @@ class LocationsActivity : ComponentActivity() {
         }
 
         val locationParams = object: LocationParamInterface {
+            override fun deleteLocations(location: WorldLocation) {
+                locationVM.removeLocation(location)
+            }
+
+            override fun navigateBack() {
+                this@LocationsActivity.finish()
+            }
             override fun toastMessage(message: String) {
                 Toast.makeText(this@LocationsActivity.applicationContext, message, Toast.LENGTH_SHORT).show()
             }
@@ -80,7 +92,11 @@ class LocationsActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        locationList(locations, locationParams, Modifier)
+                        if (locations.isNotEmpty()) {
+                            locationList(locations, locationParams, Modifier)
+                        } else {
+                            emptyLocationsList(locationParams, Modifier)
+                        }
                     }
                 }
             }
@@ -95,7 +111,27 @@ class LocationsActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun emptyLocationsList(params: LocationParamInterface, modifier:Modifier = Modifier) {
+    IconButton(
+        modifier = modifier.fillMaxWidth(),
+        onClick = {params.navigateBack()}
+    ) {
+        Column(
+            modifier = modifier.fillMaxSize(0.5F).aspectRatio(1F),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                modifier = modifier.fillMaxWidth(0.5F).aspectRatio(1F),
+                painter = painterResource(R.drawable.baseline_playlist_add_24),
+                contentDescription = stringResource(R.string.empty_location_list)
+            )
+            Text(stringResource(R.string.empty_location_list))
+        }
+    }
+}
+
 @Composable
 private fun locationList(locationList: List<WorldLocation>, params: LocationParamInterface, modifier: Modifier = Modifier) {
     LazyColumn(
@@ -136,7 +172,7 @@ private fun holder(location: WorldLocation, params: LocationParamInterface, modi
             if (showIcons.value) {
                 IconButton(
                     onClick = {
-                        params.toastMessage("Kill it!")
+                        params.deleteLocations(location)
                     }
                 ) {
                     Icon(painter = painterResource(R.drawable.baseline_delete_24),
@@ -153,6 +189,8 @@ private fun holder(location: WorldLocation, params: LocationParamInterface, modi
 fun holderPreview() {
     val xalapaLocation = WorldLocation(19.5438, 96.9102, "Xalapa", "Xalapa is a cultural city. It has theaters and Universities. It is the capital of Veracruz")  // Xalapa, Veracruz. Mexico
     val params = object: LocationParamInterface {
+        override fun deleteLocations(location: WorldLocation) {}
+        override fun navigateBack() {}
         override fun toastMessage(message: String) {}
     }
     LuisMaps2Theme {
@@ -162,7 +200,7 @@ fun holderPreview() {
 
 @Preview(showBackground = true)
 @Composable
-fun greetingPreview() {
+fun reminderListPreview() {
     val locations = listOf(
         WorldLocation(19.4326, 99.1332, "Mexico City", "Extremely large city"), // Mexico City. Mexico
         WorldLocation(20.9674, 89.5926, "Merida, Yucatán", "Extremely hot city"), // Merida, Yucatan. Mexico
@@ -172,6 +210,8 @@ fun greetingPreview() {
     )
 
     val params = object: LocationParamInterface {
+        override fun deleteLocations(location: WorldLocation) {}
+        override fun navigateBack() {}
         override fun toastMessage(message: String) {}
     }
 

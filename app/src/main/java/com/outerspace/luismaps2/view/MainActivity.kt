@@ -1,7 +1,9 @@
 package com.outerspace.luismaps2.view
 
+import android.Manifest
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,6 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
 import com.outerspace.luismaps2.R
+import com.outerspace.luismaps2.location.LOG_TAG
+import com.outerspace.luismaps2.location.LocationViewModel
+import com.outerspace.luismaps2.location.PermissionsViewModel
 import com.outerspace.luismaps2.model.EmailLoginDatabase
 import com.outerspace.luismaps2.ui.theme.LuisMaps2Theme
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +28,8 @@ const val EMAIL_LOGIN_DB_NAME = "email-login.db"
 
 class MainActivity : ComponentActivity() {
     private lateinit var mainVM: MainViewModel
+    private lateinit var locationVM: LocationViewModel
+    private lateinit var permissionsVM: PermissionsViewModel
     private lateinit var mainView: MainView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,6 +38,27 @@ class MainActivity : ComponentActivity() {
         mainVM = ViewModelProvider(this)[MainViewModel::class.java]
         mainVM.weakActivity = WeakReference(this)
 
+        locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
+        locationVM.weakActivity = WeakReference(this)
+
+        permissionsVM = ViewModelProvider(this)[PermissionsViewModel::class.java]
+        permissionsVM.weakActivity = WeakReference(this)
+
+        permissionsVM.mutablePermissionGranted.observe(this) { permissionMap: Map<String, Boolean> ->
+            Log.d(LOG_TAG, permissionMap.toString())
+            if (permissionMap[Manifest.permission.ACCESS_FINE_LOCATION] == true &&
+                permissionMap[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+            ) {
+                permissionsVM.requestBackgroundPermissions()
+            } else if (permissionMap[Manifest.permission.ACCESS_BACKGROUND_LOCATION] == true) {
+                // this action gets triggered at mainVM.logInSuccess when
+                // ACCESS_FINE, ACCESS_COARSE and ACCESS_BACKGROUND permissions
+                // are granted proceed to MapsActivity
+                val intent = Intent(this@MainActivity.baseContext, MapsActivity::class.java)
+                startActivity(intent)
+            }
+        }
+
         mainVM.setEmailDb(
             Room.databaseBuilder(
                 this.applicationContext, EmailLoginDatabase::class.java, EMAIL_LOGIN_DB_NAME
@@ -38,7 +66,9 @@ class MainActivity : ComponentActivity() {
         )
 
         mainVM.logInSuccess.observe(this) {
-            if (!it) {
+            if (it) {
+                permissionsVM.requestLocationPermissions()
+            } else {
                 Toast.makeText(this, getString(R.string.login_failed_message), Toast.LENGTH_LONG).show()
             }
         }
@@ -46,10 +76,6 @@ class MainActivity : ComponentActivity() {
         mainVM.currentUser.observe(this) {
             val text = getString(R.string.login_success_message, it)
             Toast.makeText(this, text, Toast.LENGTH_LONG).show()
-            CoroutineScope(Dispatchers.IO).launch {
-                val intent = Intent(this@MainActivity.baseContext, MapsActivity::class.java)
-                startActivity(intent)
-            }
         }
 
         mainVM.message.observe(this) {
@@ -64,7 +90,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    mainView.MainLoginScreen()
+                    mainView.mainLoginScreen()
                 }
             }
         }
