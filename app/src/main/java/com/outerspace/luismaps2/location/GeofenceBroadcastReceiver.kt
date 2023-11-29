@@ -34,18 +34,24 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         val transition = geofencingEvent.geofenceTransition
         val geofenceMessage = getTransitionMessage(context, transition)
         Toast.makeText(context, geofenceMessage, Toast.LENGTH_SHORT).show()
-        if (transition == Geofence.GEOFENCE_TRANSITION_DWELL) {
-            val triggeringGeofences = geofencingEvent.triggeringGeofences
-            val geofenceTransitionDetails = getGeofenceTransitionDetails(
-                context,
-                transition,
-                triggeringGeofences
-            )
-            createNotificationChannel(context)
-            sendNotification(context, geofenceTransitionDetails)
-        } else {
-            Log.e(LOG_TAG, getString(context ?: return,
-                    R.string.geofence_transition_invalid_type))
+
+        when(transition) {
+            Geofence.GEOFENCE_TRANSITION_DWELL -> {
+                val triggeringGeofences = geofencingEvent.triggeringGeofences
+                val geofenceTransitionDetails = getGeofenceTransitionDetails(
+                    context,
+                    transition,
+                    triggeringGeofences
+                )
+                createNotificationChannel(context)
+                sendNotification(context, geofenceTransitionDetails)
+            }
+            Geofence.GEOFENCE_TRANSITION_ENTER ->
+                Log.d(LOG_TAG, getString(context, R.string.entering_geofence))
+            Geofence.GEOFENCE_TRANSITION_EXIT ->
+                Log.d(LOG_TAG, getString(context, R.string.exiting_geofence))
+            else ->
+                Log.d(LOG_TAG, getString(context, R.string.geofence_transition_invalid_type))
         }
     }
 

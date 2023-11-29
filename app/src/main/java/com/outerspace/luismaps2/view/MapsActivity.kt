@@ -3,15 +3,19 @@ package com.outerspace.luismaps2.view
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.util.LogPrinter
 import android.view.Gravity
 import android.widget.Toast
+import android.widget.Toast.makeText
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -40,11 +44,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SnapshotMutationPolicy
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -54,14 +60,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.CameraUpdateFactory.newCameraPosition
+import com.google.android.gms.maps.UiSettings
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -74,7 +87,9 @@ import com.outerspace.luismaps2.location.LONDON_LOCATION
 import com.outerspace.luismaps2.location.LocationDatabase
 import com.outerspace.luismaps2.location.LocationViewModel
 import com.outerspace.luismaps2.location.WorldLocation
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.lang.ref.WeakReference
 
 class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
@@ -121,11 +136,13 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
     interface MapParamsInterface {
         var forceRecomposeCount: MutableState<Int>
         var currentLocation: MutableState<WorldLocation>
+        var currentZoom: MutableState<Float>
         var cameraPositionState:CameraPositionState
         fun onMapClick(clickedLocation: WorldLocation)
         fun getValidPoiList(): List<WorldLocation>
         fun editLocation(location: WorldLocation)
         fun launchSnackBar()
+        fun toast(msg: String)
     }
 
     interface DialogParamsInterface {
@@ -148,7 +165,6 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         val dialogParams = object: DialogParamsInterface {
             override var poi: MutableState<WorldLocation> = remember { mutableStateOf(LONDON_LOCATION, policy()) }
             override fun onClickCreatePoi(poi: WorldLocation) {
-                poi.current = false
                 locationVM.addLocation(poi)
                 geofenceVM.add(poi)
             }
@@ -170,7 +186,10 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         val mapParams = object: MapParamsInterface {
             override var forceRecomposeCount: MutableState<Int> = remember { mutableIntStateOf(0) }  // forces to recompose.
             override var currentLocation: MutableState<WorldLocation> = remember { mutableStateOf(LONDON_LOCATION)}
-            override var cameraPositionState: CameraPositionState = CameraPositionState()
+            override var currentZoom: MutableState<Float> = remember { mutableFloatStateOf(15F) }
+            override var cameraPositionState = rememberCameraPositionState {
+                position = CameraPosition.fromLatLngZoom(LONDON_LOCATION.getLatLng(), 15F)
+            }
             override fun onMapClick(clickedLocation: WorldLocation) {
                 dialogParams.poi.value = clickedLocation
                 showFormDialog = true
@@ -188,12 +207,18 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                         SnackbarResult.ActionPerformed -> {
                             locationVM.deleteAllLocations()
                             forceRecomposeCount.value += 1
-                            Toast.makeText(this@MapsActivity, this@MapsActivity.getText(R.string.all_locations_were_deleted), Toast.LENGTH_SHORT).show()
+                            makeText(this@MapsActivity, this@MapsActivity.getText(R.string.all_locations_were_deleted), Toast.LENGTH_SHORT).show()
                         }
                         SnackbarResult.Dismissed -> {
-                            Toast.makeText(this@MapsActivity, this@MapsActivity.getText(R.string.no_locations_deleted), Toast.LENGTH_SHORT).show()
+                            makeText(this@MapsActivity, this@MapsActivity.getText(R.string.no_locations_deleted), Toast.LENGTH_SHORT).show()
                         }
                     }
+                }
+            }
+
+            override fun toast(msg: String) {
+                runBlocking(Dispatchers.Main) {
+                    makeText(this@MapsActivity.applicationContext, msg, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -242,22 +267,17 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                 )
             },
         ) { innerPadding ->
-            innerPadding.toString()
 
             locationVM.mutableCurrentLocation.observe(this) {
-                Log.d(LOG_TAG, it.toString())
-                locationVM.poiSet.removeIf { poi -> poi.current }
-                it.current = true
-                locationVM.poiSet.add(it)    // current location is shown but does not get stored
-                mapParams.currentLocation = mutableStateOf(it)
-                val update = newCameraPosition(CameraPosition(it.getLatLng(), 18F, 0F, 0F))
-                mapParams.cameraPositionState.move(update)
+                mapParams.currentLocation.value = it
                 mapParams.forceRecomposeCount.value += 1
             }
 
-            mapsScreen(modifier, mapParams)
-            if (showFormDialog)
-                inputFormDialog(modifier, dialogParams)
+            Box(modifier = modifier.padding(innerPadding)) {
+                mapsScreen(modifier, mapParams)
+                if (showFormDialog)
+                    inputFormDialog(modifier, dialogParams)
+            }
         }
     }
 
@@ -325,13 +345,45 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
 
     @Composable
     private fun mapsScreen(modifier: Modifier = Modifier, mapParams: MapParamsInterface) {
+        snapshotFlow { mapParams.cameraPositionState.position }.let {
+            lifecycleScope.launch(Dispatchers.IO) {
+                it.collect {
+                    val zoomValue: Float = mapParams.currentZoom.value
+                    if (zoomValue != it.zoom) {
+                        mapParams.toast(msg = "zoom: ${it.zoom}")
+                        mapParams.currentZoom.value = it.zoom
+                    }
+                }
+            }
+        }
+
         if (mapParams.forceRecomposeCount.value > 0) {
+            val uiSettings = remember { MapUiSettings(zoomControlsEnabled = true, myLocationButtonEnabled = true) }
+            val properties = remember { MapProperties(isMyLocationEnabled = true) }
 
             GoogleMap(
                 modifier = modifier.fillMaxSize(),
+                uiSettings = uiSettings,
+                properties = properties,
                 cameraPositionState = mapParams.cameraPositionState,
-                onMapClick = { mapParams.onMapClick(WorldLocation(it)) }
+                onMapClick = { mapParams.onMapClick(WorldLocation(it)) },
+                onMyLocationButtonClick = {
+                    val update = newCameraPosition(CameraPosition.Builder()
+                        .target(mapParams.currentLocation.value.getLatLng())
+                        .zoom(mapParams.currentZoom.value)
+                        .build())
+                    mapParams.cameraPositionState.move(update)
+                    true
+                }
             ) {
+                Marker(
+                    state = MarkerState(position = mapParams.currentLocation.value.getLatLng()),
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
+                    onClick = {
+                        mapParams.editLocation(mapParams.currentLocation.value)
+                        false
+                    },
+                )
                 for (location in mapParams.getValidPoiList()) {
                     Marker(
                         state = MarkerState(position = location.getLatLng()),
@@ -339,18 +391,13 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                         snippet = location.description,
                         tag = location,
                         onClick = {
-                            if ((it.tag as WorldLocation).title.isEmpty()) {
-                                mapParams.editLocation(it.tag as WorldLocation)
-                            } else {
-                                it.showInfoWindow()
-                            }
+                            mapParams.editLocation(it.tag as WorldLocation)
                             false
                         },
                     )
                 }
             }
         }
-
     }
 
     @Preview

@@ -11,7 +11,6 @@ data class WorldLocation(
     var title: String = ""
     var description: String = ""
     var valid: Boolean = true
-    var current: Boolean = false
 
     constructor(lat: Double, lon: Double, title: String, description: String, id:Int = 0): this(lat, lon) {
         this.title = title
@@ -26,7 +25,4 @@ data class WorldLocation(
     fun getLatLng(): LatLng {return LatLng(lat, lon) }
 
     override fun toString(): String = "($lat, $lon)"
-//    override fun equals(other: Any?): Boolean {
-//        return other != null && this.lat == (other as WorldLocation).lat && this.lon == other.lon
-//    }
 }
