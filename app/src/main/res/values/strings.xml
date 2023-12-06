@@ -53,6 +53,7 @@
     <string name="title_activity_locations">LocationsActivity</string>
 
     <string name="content_description_delete">Delete Point of Interest</string>
+    <string name="content_description_edit">Edit Point of Interest</string>
     <string name="geofence_transition_invalid_type">Invalid Geofences transition type</string>
     <string name="access_fine_location_rationale">I need permission to know your current location to remind you when you are close to a Point of Interest.</string>
 
@@ -62,4 +63,7 @@
     <string name="exiting_geofence">Exiting Geofence</string>
     <string name="dwelling_geofence">Dwelling Geofence</string>
     <string name="other_geofence_transition">Other Geofence transition</string>
+
+    <string name="content_description_check">Accept changes</string>
+    <string name="content_description_cancel">Cancel changes</string>
 </resources>

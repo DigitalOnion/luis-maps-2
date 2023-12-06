@@ -32,8 +32,14 @@ interface WorldLocationDao {
     @Query("select * from Locations")
     fun getLocations(): List<WorldLocationEntity>
 
+    @Query("select * from Locations where lat = :latitude and lon = :longitude")
+    fun getLocationAt(latitude: Double, longitude: Double): List<WorldLocationEntity>
+
     @Query("delete from Locations where lat = :latitude and lon = :longitude")
     fun deleteLocationAt(latitude: Double, longitude: Double)
+
+    @Query("update Locations set title = :title, description = :description where lat = :latitude and lon = :longitude")
+    fun updateLocationAt(latitude: Double, longitude: Double, title: String, description: String)
 
     @Query("delete from Locations")
     fun deleteAll()

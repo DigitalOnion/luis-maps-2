@@ -18,16 +18,23 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Green
+import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,7 +53,8 @@ import kotlinx.coroutines.launch
 
 private interface LocationParamInterface {
     fun navigateBack()
-    fun deleteLocations(location: WorldLocation)
+    fun deleteLocation(location: WorldLocation)
+    fun editLocation(location: WorldLocation)
     fun toastMessage(message: String)
 }
 
@@ -68,10 +76,13 @@ class LocationsActivity : ComponentActivity() {
         }
 
         val locationParams = object: LocationParamInterface {
-            override fun deleteLocations(location: WorldLocation) {
+            override fun deleteLocation(location: WorldLocation) {
                 locationVM.removeLocation(location)
             }
 
+            override fun editLocation(location: WorldLocation) {
+                locationVM.addOrUpdateLocation(location)
+            }
             override fun navigateBack() {
                 this@LocationsActivity.finish()
             }
@@ -146,8 +157,12 @@ private fun locationList(locationList: List<WorldLocation>, params: LocationPara
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun holder(location: WorldLocation, params: LocationParamInterface, modifier: Modifier = Modifier) {
-    val showIcons = remember { mutableStateOf(false) }
+private fun holder(location: WorldLocation, params: LocationParamInterface, modifier: Modifier = Modifier, initialShowIcons: Boolean = false, initialEditMode: Boolean = false) {
+    val showIcons = remember { mutableStateOf(initialShowIcons) }
+    val editMode = remember { mutableStateOf(initialEditMode) }
+
+    var reminderTitle by remember { mutableStateOf(location.title) }
+    var reminderDescription by remember { mutableStateOf(location.description) }
     Card (
         shape = MaterialTheme.shapes.medium,
         modifier = modifier
@@ -163,21 +178,75 @@ private fun holder(location: WorldLocation, params: LocationParamInterface, modi
             Column(
                 modifier.weight(1F)
             ) {
-                Text(text = location.title,
-                    style = MaterialTheme.typography.labelLarge)
-                Text(text = location.description,
-                    style = MaterialTheme.typography.labelSmall
-                )
+                if (editMode.value) {
+                    OutlinedTextField(value = reminderTitle,
+                        onValueChange = { reminderTitle = it },
+                        label = { Text(text = stringResource(id = R.string.reminder_title_label)) },
+                        placeholder = { Text(text = stringResource(id = R.string.reminder_title_placeholder)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(value = reminderDescription,
+                        onValueChange = { reminderDescription = it },
+                        label = { Text(text = stringResource(id = R.string.reminder_description_label)) },
+                        placeholder = { Text(text = stringResource(id = R.string.reminder_description_placeholder)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    Text(text = location.title,
+                        style = MaterialTheme.typography.labelLarge)
+                    Text(text = location.description,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                    Text(text = "${location.lat}, ${location.lon}; ${if (location.valid) "Valid" else "Not valid"}",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
             }
             if (showIcons.value) {
-                IconButton(
-                    onClick = {
-                        params.deleteLocations(location)
+                if (!editMode.value) {
+                    IconButton(
+                        onClick = {
+                            editMode.value = !editMode.value
+                        }
+                    ) {
+                        Icon(painter = painterResource(R.drawable.baseline_edit_24),
+                            contentDescription = stringResource(R.string.content_description_edit)
+                        )
                     }
-                ) {
-                    Icon(painter = painterResource(R.drawable.baseline_delete_24),
-                        contentDescription = stringResource(R.string.content_description_delete)
-                    )
+                    IconButton(
+                        onClick = {
+                            params.deleteLocation(location)
+                        }
+                    ) {
+                        Icon(painter = painterResource(R.drawable.baseline_delete_24),
+                            contentDescription = stringResource(R.string.content_description_delete)
+                        )
+                    }
+                } else {
+                    IconButton(
+                        onClick = {
+                            location.title = reminderTitle
+                            location.description = reminderDescription
+                            params.editLocation(location)
+                            editMode.value = false
+                        }
+                    ) {
+                        Icon(painter = painterResource(R.drawable.baseline_check_24),
+                            contentDescription = stringResource(R.string.content_description_check),
+                            tint = Green
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            editMode.value = false
+                            showIcons.value = false
+                        }
+                    ) {
+                        Icon(painter = painterResource(R.drawable.baseline_cancel_24),
+                            contentDescription = stringResource(R.string.content_description_cancel),
+                            tint = Red
+                        )
+                    }
                 }
             }
         }
@@ -189,12 +258,13 @@ private fun holder(location: WorldLocation, params: LocationParamInterface, modi
 fun holderPreview() {
     val xalapaLocation = WorldLocation(19.5438, 96.9102, "Xalapa", "Xalapa is a cultural city. It has theaters and Universities. It is the capital of Veracruz")  // Xalapa, Veracruz. Mexico
     val params = object: LocationParamInterface {
-        override fun deleteLocations(location: WorldLocation) {}
+        override fun deleteLocation(location: WorldLocation) {}
+        override fun editLocation(location: WorldLocation) {}
         override fun navigateBack() {}
         override fun toastMessage(message: String) {}
     }
     LuisMaps2Theme {
-        holder(xalapaLocation, params)
+        holder(xalapaLocation, params, Modifier, initialShowIcons = true, initialEditMode = true)
     }
 }
 
@@ -210,7 +280,8 @@ fun reminderListPreview() {
     )
 
     val params = object: LocationParamInterface {
-        override fun deleteLocations(location: WorldLocation) {}
+        override fun deleteLocation(location: WorldLocation) {}
+        override fun editLocation(location: WorldLocation) {}
         override fun navigateBack() {}
         override fun toastMessage(message: String) {}
     }

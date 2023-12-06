@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -17,6 +18,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
@@ -27,14 +29,18 @@ import java.lang.ref.WeakReference
 
 const val LOCATION_DATABASE_NAME = "location"
 const val LOCATION_REFRESH_PERIOD = 2L * 1000L        // 2 seconds
+const val LONDON_LAT = "london_lat"
+const val LONDON_LON = "london_lon"
 val LONDON_LOCATION = WorldLocation (51.5072, 0.1276, "London", "Great City of London")
 
 class LocationViewModel: ViewModel() {
-    val poiSet: MutableSet<WorldLocation> = mutableSetOf()
+    val mutablePoiList: MutableLiveData<MutableList<WorldLocation>> = MutableLiveData()
     val mutableCurrentLocation: MutableLiveData<WorldLocation> = MutableLiveData()
     val mutableAddedPoi: MutableLiveData<WorldLocation> = MutableLiveData()
     val mutableDeletedPoi: MutableLiveData<WorldLocation> = MutableLiveData()
     val mutableHasPermissions: MutableLiveData<Boolean> = MutableLiveData()
+
+    var jumpToLocation = true
 
     private lateinit var locationFlow: Flow<WorldLocation>
 
@@ -42,7 +48,6 @@ class LocationViewModel: ViewModel() {
         @SuppressLint("MissingPermission")
         set(weakActivityArg) {
             field = weakActivityArg
-            val activity: ComponentActivity = weakActivityArg.get() ?: return
 
             // the createRequest and other API is deprecated. I found the new api in: https://tomas-repcik.medium.com/locationrequest-create-got-deprecated-how-to-fix-it-e4f814138764
 
@@ -50,7 +55,6 @@ class LocationViewModel: ViewModel() {
                 val callback = object : LocationCallback() {
                     override fun onLocationAvailability(availability: LocationAvailability) {}
                     override fun onLocationResult(lResult: LocationResult) {
-                        //super.onLocationResult(lResult)
                         val wla = mutableCurrentLocation.value
                         val l = lResult.lastLocation
                         if (l != null) {
@@ -110,34 +114,50 @@ class LocationViewModel: ViewModel() {
     var locationDb: LocationDatabase? = null
         set(db) {
             field = db
-            viewModelScope.launch {
-                if (db != null) {
-                    val d = viewModelScope.async(Dispatchers.IO) {
-                        db.worldLocationDao().getLocations().map {WorldLocation(it)}
-                    }
-                    val locations = d.await()
-                    poiSet.addAll(locations)
-                }
-            }
+            viewModelScope.launch { populatePoiList(locationDb) }
         }
 
-    fun addLocation(location: WorldLocation) {
-        poiSet.add(location)                    // user's POI are stored
+    private fun populatePoiList(db: LocationDatabase?): Deferred<List<WorldLocation>> {
+        if (db != null) {
+            val d = viewModelScope.async(Dispatchers.IO) {
+                db.worldLocationDao().getLocations().map {WorldLocation(it)}
+            }
+            return d
+        }
+        return viewModelScope.async { listOf() }
+    }
+
+    fun refreshPoiList() {
+        var l: List<WorldLocation>
+        runBlocking(Dispatchers.IO) {
+            l = populatePoiList(locationDb).await()
+        }
+        mutablePoiList.value = mutableListOf()
+        mutablePoiList.value?.addAll(l)
+    }
+
+    fun addOrUpdateLocation(location: WorldLocation) {
         runBlocking(Dispatchers.IO) {
             val dao = locationDb!!.worldLocationDao()
-            dao.insert(WorldLocationEntity(location))
+            val locationsAt = dao.getLocationAt(location.lat, location.lon)
+            if (locationsAt.isNotEmpty()) {
+                dao.updateLocationAt(location.lat, location.lon, location.title, location.description)
+            } else {
+                dao.insert(WorldLocationEntity(location))
+            }
             viewModelScope.launch(Dispatchers.Main) {
+                refreshPoiList()
                 mutableAddedPoi.value = location
             }
         }
     }
 
     fun removeLocation(location: WorldLocation) {
-        poiSet.remove(location)
         runBlocking(Dispatchers.IO) {
             val dao = locationDb!!.worldLocationDao()
             dao.deleteLocationAt(location.lat, location.lon)
             viewModelScope.launch(Dispatchers.Main) {
+                refreshPoiList()
                 mutableDeletedPoi.value = location
             }
         }
@@ -146,6 +166,7 @@ class LocationViewModel: ViewModel() {
     fun deleteAllLocations() {
         viewModelScope.launch(Dispatchers.IO) {
             locationDb!!.worldLocationDao().deleteAll()
+            mutablePoiList.value?.clear()
         }
     }
 }

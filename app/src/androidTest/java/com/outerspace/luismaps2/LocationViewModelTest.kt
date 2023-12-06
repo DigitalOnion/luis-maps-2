@@ -85,7 +85,7 @@ class LocationViewModelTest {
 
             // adds a location to the View Model. This will trigger the observer
             // assigning a the value to the observedLocation
-            locationVM.addLocation(tepoztlanLocation)
+            locationVM.addOrUpdateLocation(tepoztlanLocation)
 
             // verifies the observed value is equal (equality) to the added value
             // WordLocation equality only compares lat and lon
@@ -121,7 +121,7 @@ class LocationViewModelTest {
 
         try {
             // add various locations through the View Model
-            locations.forEach { location -> locationVM.addLocation(location) }
+            locations.forEach { location -> locationVM.addOrUpdateLocation(location) }
 
             // retrieve locations from database
             val retrievedLocations = db.worldLocationDao().getLocations()
@@ -152,21 +152,21 @@ class LocationViewModelTest {
 
         try {
             // add various locations through the View Model
-            locations.forEach { location -> locationVM.addLocation(location) }
+            locations.forEach { location -> locationVM.addOrUpdateLocation(location) }
 
             // removes one location, any location.
             val idx = Random.nextInt(0, locations.size)
             locationVM.removeLocation(locations[idx])
 
             // poiSet is now missing an element
-            assert(locationVM.poiSet.size == locations.size - 1)
+            assert(locationVM.poiList.size == locations.size - 1)
             var nPresent = 0
             var nMissing = 0
 
             // counts how many are missing
             locations.forEach {
-                nMissing += if (!locationVM.poiSet.contains(it)) 1 else 0
-                nPresent += if (locationVM.poiSet.contains(it)) 1 else 0
+                nMissing += if (!locationVM.poiList.contains(it)) 1 else 0
+                nPresent += if (locationVM.poiList.contains(it)) 1 else 0
             }
             assert(nPresent == locations.size - nMissing)
             assert(nMissing + nPresent == locations.size)
@@ -176,7 +176,7 @@ class LocationViewModelTest {
 
             // verify that each reminding locations are present in the poiSet.
             retrievedLocations.forEach { location ->
-                assert(locationVM.poiSet.contains( location ))
+                assert(locationVM.poiList.contains( location ))
             }
 
         } finally {
