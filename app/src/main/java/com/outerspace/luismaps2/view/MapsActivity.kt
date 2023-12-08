@@ -43,6 +43,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SnapshotMutationPolicy
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -113,7 +114,6 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
             ).build()
 
         geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
-        geofenceVM.weakActivity = WeakReference(this)
 
         setContent {
             LuisMaps2Theme {
@@ -148,7 +148,6 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         fun onMapClick(clickedLocation: WorldLocation)
         fun editLocation(location: WorldLocation)
         fun launchSnackBar()
-        fun toast(msg: String)
     }
 
     interface DialogParamsInterface {
@@ -167,12 +166,13 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
 
         var showMenu by remember { mutableStateOf(false) }
         var showFormDialog by remember { mutableStateOf(false) }
+        var poiListChanged by remember { mutableIntStateOf(1) }
 
         val dialogParams = object: DialogParamsInterface {
             override var poi: MutableState<WorldLocation> = remember { mutableStateOf(LONDON_LOCATION, policy()) }
             override fun onClickCreatePoi(poi: WorldLocation) {
                 locationVM.addOrUpdateLocation(poi)
-                geofenceVM.add(poi)
+                geofenceVM.add(this@MapsActivity, poi)
             }
             override fun showInputPoiDialog(show: Boolean) {
                 showFormDialog = show
@@ -197,6 +197,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
             }
             override fun refreshPoiList() {
                 locationVM.refreshPoiList()
+                poiListChanged++
             }
             override fun getPoiList(): MutableList<WorldLocation> {
                 return locationVM.mutablePoiList.value ?: mutableListOf()
@@ -218,7 +219,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                 scope.launch {
                     when(snackBarHostState.showSnackbar(snackBarVisuals)) {
                         SnackbarResult.ActionPerformed -> {
-                            locationVM.deleteAllLocations()
+                            locationVM.deleteAllLocations(this@MapsActivity, geofenceVM)
                             makeText(this@MapsActivity, this@MapsActivity.getText(R.string.all_locations_were_deleted), Toast.LENGTH_SHORT).show()
                         }
                         SnackbarResult.Dismissed -> {
@@ -227,18 +228,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                     }
                 }
             }
-            override fun toast(msg: String) {
-                runBlocking(Dispatchers.Main) {
-                    makeText(this@MapsActivity.applicationContext, msg, Toast.LENGTH_SHORT).show()
-                }
-            }
         }
-
-//        locationVM.mutablePoiList.observe(this) {
-//            if (it.size > 0) {
-//                mapParams.poiListLive.value = it
-//            }
-//        }
 
         locationVM.mutableDeletedPoi.observe(this) {
         }
@@ -299,7 +289,8 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
             }
 
             Box(modifier = modifier.padding(innerPadding)) {
-                mapsScreen(modifier, mapParams)
+                if (poiListChanged > 0)
+                    mapsScreen(modifier, mapParams)
                 if (showFormDialog)
                     inputFormDialog(modifier, dialogParams)
             }

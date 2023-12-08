@@ -66,4 +66,6 @@
 
     <string name="content_description_check">Accept changes</string>
     <string name="content_description_cancel">Cancel changes</string>
+
+    <string name="geofence_error">Error recovering geofence info.</string>
 </resources>

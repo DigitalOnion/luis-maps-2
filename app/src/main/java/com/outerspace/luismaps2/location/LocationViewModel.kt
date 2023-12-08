@@ -145,6 +145,10 @@ class LocationViewModel: ViewModel() {
             } else {
                 dao.insert(WorldLocationEntity(location))
             }
+            val storedLocationsAt = dao.getLocationAt(location.lat, location.lon)
+            if (storedLocationsAt.isNotEmpty()) {
+                location.id = storedLocationsAt[0].locationId
+            }
             viewModelScope.launch(Dispatchers.Main) {
                 refreshPoiList()
                 mutableAddedPoi.value = location
@@ -163,10 +167,17 @@ class LocationViewModel: ViewModel() {
         }
     }
 
-    fun deleteAllLocations() {
+    fun deleteAllLocations(activity:ComponentActivity, geofenceVM: GeofenceViewModel) {
         viewModelScope.launch(Dispatchers.IO) {
+            val allLocations = locationDb!!.worldLocationDao().getLocations()
+            allLocations.forEach {
+                geofenceVM.remove(activity, WorldLocation(it))
+            }
             locationDb!!.worldLocationDao().deleteAll()
             mutablePoiList.value?.clear()
+        }
+        viewModelScope.launch(Dispatchers.Main) {
+            refreshPoiList()
         }
     }
 }

@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -24,8 +25,9 @@ const val GEOFENCE_NOTIFICATION_ID = 872 // random number
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val geofencingEvent = GeofencingEvent.fromIntent(intent) ?: return
+        val bundle = intent.extras as Bundle
 
-        if (geofencingEvent.hasError()) {
+        if (bundle == null || geofencingEvent.hasError()) {
             val errorMessage = GeofenceStatusCodes
                 .getStatusCodeString(geofencingEvent.errorCode)
             Log.e(LOG_TAG, errorMessage)
@@ -37,14 +39,9 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
         when(transition) {
             Geofence.GEOFENCE_TRANSITION_DWELL -> {
-                val triggeringGeofences = geofencingEvent.triggeringGeofences
-                val geofenceTransitionDetails = getGeofenceTransitionDetails(
-                    context,
-                    transition,
-                    triggeringGeofences
-                )
+//                val triggeringGeofences = geofencingEvent.triggeringGeofences
                 createNotificationChannel(context)
-                sendNotification(context, geofenceTransitionDetails)
+                sendNotification(context, bundle)
             }
             Geofence.GEOFENCE_TRANSITION_ENTER ->
                 Log.d(LOG_TAG, getString(context, R.string.entering_geofence))
@@ -54,17 +51,17 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 Log.d(LOG_TAG, getString(context, R.string.geofence_transition_invalid_type))
         }
     }
-
-    private fun getGeofenceTransitionDetails(
-        context: Context,
-        transition: Int,
-        geofences: List<Geofence>?): String {
-        val geo = geofences!!
-            .map {geofence -> "(${geofence.latitude}, ${geofence.longitude}) "}
-            .reduce { acc, geofence -> acc + geofence }
-
-        return "${getTransitionMessage(context, transition)}: $geo"
-    }
+//
+//    private fun getGeofenceTransitionDetails(
+//        context: Context,
+//        transition: Int,
+//        geofences: List<Geofence>?): String {
+//        val geo = geofences!!
+//            .map {geofence -> "(${geofence.latitude}, ${geofence.longitude}) "}
+//            .reduce { acc, geofence -> acc + geofence }
+//
+//        return "${getTransitionMessage(context, transition)}: $geo"
+//    }
 
     private fun getTransitionMessage(context:Context, transition: Int): String {
         return when(transition) {
@@ -90,11 +87,22 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun sendNotification(context: Context, details: String) {
+    private fun sendNotification(context: Context, bundle: Bundle) {
+        val errorMessage = context.getString(R.string.geofence_error)
+        var notificationTitle: String = getString(context, R.string.app_title)
+        var notificationText: String = errorMessage
+        if (bundle.containsKey(GEOFENCE_NOTIFICATION_KEY)) {
+            val info = bundle.getString(GEOFENCE_NOTIFICATION_KEY)?.split("|")
+            if (info != null && info.size == 2) {
+                notificationTitle = "${notificationTitle} - ${info[0]}"
+                notificationText = "${info[1]}"
+            }
+        }
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.notification_icon)
-            .setContentTitle(getString(context, R.string.app_title))
-            .setContentText(details)
+            .setContentTitle(notificationTitle)
+            .setContentText(notificationText)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
         val notificationManager = ContextCompat.getSystemService(context, NotificationManager::class.java)

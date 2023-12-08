@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
 import com.outerspace.luismaps2.R
+import com.outerspace.luismaps2.location.GeofenceViewModel
 import com.outerspace.luismaps2.location.LOCATION_DATABASE_NAME
 import com.outerspace.luismaps2.location.LocationDatabase
 import com.outerspace.luismaps2.location.LocationViewModel
@@ -60,11 +61,15 @@ private interface LocationParamInterface {
 
 class LocationsActivity : ComponentActivity() {
     private lateinit var locationVM: LocationViewModel
+    private lateinit var geofenceVM: GeofenceViewModel
     private lateinit var db: LocationDatabase
     private lateinit var locations: List<WorldLocation>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
+
         CoroutineScope(Dispatchers.IO).launch {
             db = Room.databaseBuilder(
                 this@LocationsActivity.applicationContext,
@@ -78,6 +83,7 @@ class LocationsActivity : ComponentActivity() {
         val locationParams = object: LocationParamInterface {
             override fun deleteLocation(location: WorldLocation) {
                 locationVM.removeLocation(location)
+                geofenceVM.remove(this@LocationsActivity, location)
             }
 
             override fun editLocation(location: WorldLocation) {
