@@ -7,10 +7,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.gms.maps.model.LatLng
-import com.outerspace.luismaps2.location.LocationDatabase
-import com.outerspace.luismaps2.location.LocationViewModel
-import com.outerspace.luismaps2.location.WorldLocation
-import com.outerspace.luismaps2.location.WorldLocationEntity
+import com.outerspace.luismaps2.repositories.LocationDatabase
+import com.outerspace.luismaps2.viewModels.LocationViewModel
+import com.outerspace.luismaps2.domain.WorldLocation
+import com.outerspace.luismaps2.repositories.WorldLocationEntity
 import com.outerspace.luismaps2.view.MapsActivity
 import org.junit.After
 import org.junit.Before

@@ -1,7 +1,7 @@
-package com.outerspace.luismaps2.location
+package com.outerspace.luismaps2.domain
 
 import com.google.android.gms.maps.model.LatLng
-import java.util.UUID
+import com.outerspace.luismaps2.repositories.WorldLocationEntity
 
 data class WorldLocation(
     var lat: Double,

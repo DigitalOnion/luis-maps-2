@@ -1,4 +1,4 @@
-package com.outerspace.luismaps2.location
+package com.outerspace.luismaps2.viewModels
 
 import android.Manifest
 import android.app.PendingIntent
@@ -12,6 +12,9 @@ import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
+import com.outerspace.luismaps2.broadcastReceivers.GeofenceBroadcastReceiver
+import com.outerspace.luismaps2.broadcastReceivers.LOG_TAG
+import com.outerspace.luismaps2.domain.WorldLocation
 
 const val GEOFENCE_RADIUS_IN_METERS = 100F
 const val GEOFENCE_EXPIRATION_IN_MILLISECONDS = 365L * 24L * 60L * 60L * 1000L

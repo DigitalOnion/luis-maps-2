@@ -1,10 +1,8 @@
-package com.outerspace.luismaps2.location
+package com.outerspace.luismaps2.viewModels
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts

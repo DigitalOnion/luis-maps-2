@@ -57,17 +57,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import androidx.room.Room
 import com.google.android.gms.maps.CameraUpdateFactory.newCameraPosition
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -76,21 +72,18 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.outerspace.luismaps2.R
-import com.outerspace.luismaps2.location.GeofenceViewModel
-import com.outerspace.luismaps2.location.LOCATION_DATABASE_NAME
-import com.outerspace.luismaps2.location.LOG_TAG
-import com.outerspace.luismaps2.location.LONDON_LAT
+import com.outerspace.luismaps2.viewModels.GeofenceViewModel
+import com.outerspace.luismaps2.viewModels.LOCATION_DATABASE_NAME
+import com.outerspace.luismaps2.viewModels.LONDON_LAT
 import com.outerspace.luismaps2.ui.theme.LuisMaps2Theme
-import com.outerspace.luismaps2.location.LONDON_LOCATION
-import com.outerspace.luismaps2.location.LONDON_LON
-import com.outerspace.luismaps2.location.LocationDatabase
-import com.outerspace.luismaps2.location.LocationViewModel
-import com.outerspace.luismaps2.location.WorldLocation
+import com.outerspace.luismaps2.viewModels.LONDON_LOCATION
+import com.outerspace.luismaps2.viewModels.LONDON_LON
+import com.outerspace.luismaps2.repositories.LocationDatabase
+import com.outerspace.luismaps2.viewModels.LocationViewModel
+import com.outerspace.luismaps2.domain.WorldLocation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import org.json.JSONObject
 import java.lang.ref.WeakReference
 
 class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
@@ -418,7 +411,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                     tag = location,
                     onClick = {
                         val list = mapParams.getPoiList()
-                        val clickedPoi:WorldLocation = it.tag as WorldLocation
+                        val clickedPoi: WorldLocation = it.tag as WorldLocation
                         val poi = list.find {poiElement -> poiElement == clickedPoi }
                         if (poi != null) {
                             it.title = poi.title

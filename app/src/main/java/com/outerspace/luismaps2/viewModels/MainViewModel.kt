@@ -1,4 +1,4 @@
-package com.outerspace.luismaps2.view
+package com.outerspace.luismaps2.viewModels
 
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResult
@@ -17,8 +17,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.outerspace.luismaps2.R
-import com.outerspace.luismaps2.model.EmailLogin
-import com.outerspace.luismaps2.model.EmailLoginDatabase
+import com.outerspace.luismaps2.repositories.EmailLogin
+import com.outerspace.luismaps2.repositories.EmailLoginDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch

@@ -1,10 +1,9 @@
-package com.outerspace.luismaps2.location
+package com.outerspace.luismaps2.viewModels
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -18,6 +17,9 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.outerspace.luismaps2.domain.WorldLocation
+import com.outerspace.luismaps2.repositories.LocationDatabase
+import com.outerspace.luismaps2.repositories.WorldLocationEntity
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -120,7 +122,7 @@ class LocationViewModel: ViewModel() {
     private fun populatePoiList(db: LocationDatabase?): Deferred<List<WorldLocation>> {
         if (db != null) {
             val d = viewModelScope.async(Dispatchers.IO) {
-                db.worldLocationDao().getLocations().map {WorldLocation(it)}
+                db.worldLocationDao().getLocations().map { WorldLocation(it) }
             }
             return d
         }

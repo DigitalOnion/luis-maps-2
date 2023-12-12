@@ -1,4 +1,4 @@
-package com.outerspace.luismaps2.location
+package com.outerspace.luismaps2.broadcastReceivers
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -17,6 +17,7 @@ import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofenceStatusCodes
 import com.google.android.gms.location.GeofencingEvent
 import com.outerspace.luismaps2.R
+import com.outerspace.luismaps2.viewModels.GEOFENCE_NOTIFICATION_KEY
 
 const val LOG_TAG = "LUIS"
 const val CHANNEL_ID = "Luis_Maps_2_notifications_channel_id"
@@ -39,7 +40,6 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
         when(transition) {
             Geofence.GEOFENCE_TRANSITION_DWELL -> {
-//                val triggeringGeofences = geofencingEvent.triggeringGeofences
                 createNotificationChannel(context)
                 sendNotification(context, bundle)
             }
@@ -51,17 +51,6 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 Log.d(LOG_TAG, getString(context, R.string.geofence_transition_invalid_type))
         }
     }
-//
-//    private fun getGeofenceTransitionDetails(
-//        context: Context,
-//        transition: Int,
-//        geofences: List<Geofence>?): String {
-//        val geo = geofences!!
-//            .map {geofence -> "(${geofence.latitude}, ${geofence.longitude}) "}
-//            .reduce { acc, geofence -> acc + geofence }
-//
-//        return "${getTransitionMessage(context, transition)}: $geo"
-//    }
 
     private fun getTransitionMessage(context:Context, transition: Int): String {
         return when(transition) {

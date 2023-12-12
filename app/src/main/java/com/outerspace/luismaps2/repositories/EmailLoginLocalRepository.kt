@@ -1,9 +1,8 @@
-package com.outerspace.luismaps2.model
+package com.outerspace.luismaps2.repositories
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
-import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.Insert

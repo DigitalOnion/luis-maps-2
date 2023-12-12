@@ -14,14 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
 import com.outerspace.luismaps2.R
-import com.outerspace.luismaps2.location.LOG_TAG
-import com.outerspace.luismaps2.location.LocationViewModel
-import com.outerspace.luismaps2.location.PermissionsViewModel
-import com.outerspace.luismaps2.model.EmailLoginDatabase
+import com.outerspace.luismaps2.broadcastReceivers.LOG_TAG
+import com.outerspace.luismaps2.viewModels.LocationViewModel
+import com.outerspace.luismaps2.viewModels.PermissionsViewModel
+import com.outerspace.luismaps2.repositories.EmailLoginDatabase
 import com.outerspace.luismaps2.ui.theme.LuisMaps2Theme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.outerspace.luismaps2.viewModels.MainViewModel
 import java.lang.ref.WeakReference
 
 const val EMAIL_LOGIN_DB_NAME = "email-login.db"

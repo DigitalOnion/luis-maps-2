@@ -1,4 +1,4 @@
-package com.outerspace.luismaps2.location
+package com.outerspace.luismaps2.repositories
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import com.outerspace.luismaps2.domain.WorldLocation
 
 @Entity(tableName = "Locations")
 data class WorldLocationEntity (
