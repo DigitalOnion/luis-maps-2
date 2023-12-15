@@ -7,12 +7,12 @@ data class WorldLocation(
     var lat: Double,
     var lon: Double)
 {
-    var id: Int = 0
+    var id: Long = 0
     var title: String = ""
     var description: String = ""
     var valid: Boolean = true
 
-    constructor(lat: Double, lon: Double, title: String, description: String, id:Int = 0): this(lat, lon) {
+    constructor(lat: Double, lon: Double, title: String, description: String, id:Long = 0): this(lat, lon) {
         this.title = title
         this.description = description
         this.id = id

@@ -1,5 +1,6 @@
 package com.outerspace.luismaps2.view
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -39,6 +40,7 @@ import androidx.compose.material3.SnackbarVisuals
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SnapshotMutationPolicy
 import androidx.compose.runtime.getValue
@@ -60,6 +62,13 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
+import com.google.android.gms.location.Granularity
+import com.google.android.gms.location.LocationAvailability
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory.newCameraPosition
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
@@ -81,15 +90,20 @@ import com.outerspace.luismaps2.viewModels.LONDON_LON
 import com.outerspace.luismaps2.repositories.LocationDatabase
 import com.outerspace.luismaps2.viewModels.LocationViewModel
 import com.outerspace.luismaps2.domain.WorldLocation
+import com.outerspace.luismaps2.viewModels.LOCATION_REFRESH_PERIOD
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
-import java.lang.ref.WeakReference
 
 class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
     private lateinit var locationVM: LocationViewModel
     private lateinit var geofenceVM: GeofenceViewModel
     private lateinit var initialLocation: WorldLocation
+    private val locationRequest: LocationRequest = LocationRequest.Builder(LOCATION_REFRESH_PERIOD)
+        .setGranularity(Granularity.GRANULARITY_FINE)
+        .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+        .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,7 +114,6 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         initialLocation = WorldLocation(initialLatitude, initialLongitude)
 
         locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
-        locationVM.weakActivity = WeakReference(this)
         locationVM.locationDb =
             Room.databaseBuilder(
                 this.applicationContext, LocationDatabase::class.java, LOCATION_DATABASE_NAME
@@ -120,15 +133,56 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         }
     }
 
+
+    var currentLocation: WorldLocation? = null
+
+    @SuppressLint("MissingPermission")
     override fun onStart() {
         super.onStart()
-        locationVM.startCurrentLocationFlow(this)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            locationVM.locationDb?.worldLocationDao()?.getLocations()?.forEach {
+                geofenceVM.add(this@MapsActivity, WorldLocation(it))
+            }
+        }
+
+        val locationClient = LocationServices.getFusedLocationProviderClient(this.applicationContext)
+        locationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            null
+        )
+    }
+
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationAvailability(availability: LocationAvailability) {}
+        override fun onLocationResult(lResult: LocationResult) {
+            val l = lResult.lastLocation
+            if (l != null) {
+                val wlb = WorldLocation(l.latitude, l.longitude)
+                if (currentLocation == null
+                    || currentLocation?.lat != l.latitude
+                    || currentLocation?.lon != l.longitude) {
+                    locationVM.mutableCurrentLocation.value = wlb
+                }
+            }
+
+        }
     }
 
     override fun onResume() {
         super.onResume()
         locationVM.refreshPoiList()
     }
+
+//    override fun onStop() {
+//        super.onStop()
+//        lifecycleScope.launch(Dispatchers.IO) {
+//            locationVM.locationDb?.worldLocationDao()?.getLocations()?.forEach {
+//                geofenceVM.remove(this@MapsActivity, WorldLocation(it))
+//            }
+//        }
+//    }
 
     // NOTE: I use these MapParamsInterface and DialogParamsInterface to hoist various
     // objects and functions at once.
@@ -226,6 +280,25 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         locationVM.mutableDeletedPoi.observe(this) {
         }
 
+        locationVM.mutableCurrentLocation.observe(this) {
+            mapParams.currentLocation.value = it
+            if (locationVM.jumpToLocation) {
+                val update = newCameraPosition(CameraPosition.Builder()
+                    .target(mapParams.currentLocation.value.getLatLng())
+                    .zoom(mapParams.currentZoom.value)
+                    .build())
+                mapParams.cameraPositionState.move(update)
+
+                val sharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
+                sharedPreferences.edit()
+                    .putString(LONDON_LAT, it.lat.toString())
+                    .putString(LONDON_LON, it.lon.toString())
+                    .apply()
+
+                locationVM.jumpToLocation = false
+            }
+        }
+
         Scaffold(
             snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
             topBar = {
@@ -247,7 +320,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                             DropdownMenuItem(text = { Text(stringResource(R.string.reminder_list_menu)) },
                                 onClick = {
                                     showMenu = false
-                                    val intent = Intent(this@MapsActivity.baseContext, LocationsActivity::class.java)
+                                    val intent = Intent(this@MapsActivity.baseContext, ReminderListActivity::class.java)
                                     startActivity(intent)
                                 })
                             DropdownMenuItem(text = { Text(stringResource(R.string.delete_all_poi))},
@@ -261,25 +334,6 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                 )
             },
         ) { innerPadding ->
-
-            locationVM.mutableCurrentLocation.observe(this) {
-                mapParams.currentLocation.value = it
-                if (locationVM.jumpToLocation) {
-                    val update = newCameraPosition(CameraPosition.Builder()
-                        .target(mapParams.currentLocation.value.getLatLng())
-                        .zoom(mapParams.currentZoom.value)
-                        .build())
-                    mapParams.cameraPositionState.move(update)
-
-                    val sharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
-                    sharedPreferences.edit()
-                        .putString(LONDON_LAT, it.lat.toString())
-                        .putString(LONDON_LON, it.lon.toString())
-                        .apply()
-
-                    locationVM.jumpToLocation = false
-                }
-            }
 
             Box(modifier = modifier.padding(innerPadding)) {
                 if (poiListChanged > 0)
@@ -355,15 +409,15 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
 
     @Composable
     private fun mapsScreen(modifier: Modifier = Modifier, mapParams: MapParamsInterface) {
-        snapshotFlow { mapParams.cameraPositionState.position }.let {
-            lifecycleScope.launch(Dispatchers.IO) {
-                it.collect {
-                    val zoomValue: Float = mapParams.currentZoom.value
-                    if (zoomValue != it.zoom) {
-                        mapParams.currentZoom.value = it.zoom
+        // Reference: https://stackoverflow.com/questions/74615693/google-maps-cameraposition-jetpack-compose
+        LaunchedEffect(mapParams.cameraPositionState) {
+            snapshotFlow { mapParams.cameraPositionState.position.zoom }
+                .debounce(500)
+                .collect {
+                    if (mapParams.currentZoom.value != it) {
+                        mapParams.currentZoom.value = it
                     }
                 }
-            }
         }
 
         val uiSettings = remember { MapUiSettings(zoomControlsEnabled = true, myLocationButtonEnabled = true) }
@@ -395,14 +449,6 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                 true
             }
         ) {
-            Marker(
-                state = MarkerState(position = mapParams.currentLocation.value.getLatLng()),
-                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
-                onClick = {
-                    mapParams.editLocation(mapParams.currentLocation.value)
-                    false
-                },
-            )
             for (location in mapParams.getPoiList()) {
                 Marker(
                     state = MarkerState(position = location.getLatLng()),
@@ -426,6 +472,14 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                     },
                 )
             }
+            Marker(
+                state = MarkerState(position = mapParams.currentLocation.value.getLatLng()),
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
+                onClick = {
+                    mapParams.editLocation(mapParams.currentLocation.value)
+                    false
+                },
+            )
         }
     }
 

@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
         android:name=".MapsApplication"
@@ -20,7 +21,7 @@
         android:theme="@style/Theme.LuisMaps2"
         tools:targetApi="34">
         <activity
-            android:name=".view.LocationsActivity"
+            android:name=".view.ReminderListActivity"
             android:exported="false"
             android:label="@string/title_activity_locations"
             android:theme="@style/Theme.LuisMaps2" />
@@ -30,13 +31,12 @@
             android:value="${MAPS_API_KEY}" />
 
         <activity
-            android:name=".view.MainActivity"
+            android:name=".view.LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.LuisMaps2"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -45,7 +45,13 @@
             android:exported="false"
             android:label="@string/title_activity_maps" />
 
-        <receiver android:name=".broadcastReceivers.GeofenceBroadcastReceiver"/>
+        <receiver android:name=".backend.GeofenceBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.outerspace.luismaps2"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

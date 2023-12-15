@@ -24,7 +24,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 
-class MainViewModel: ViewModel() {
+class LoginViewModel: ViewModel() {
     private var showProgressBar: MutableLiveData<Boolean> = MutableLiveData()
     var logInSuccess: MutableLiveData<Boolean> = MutableLiveData()
     var message: MutableLiveData<Int> = MutableLiveData()

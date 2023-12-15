@@ -57,7 +57,7 @@ private interface LocationParamInterface {
     fun toastMessage(message: String)
 }
 
-class LocationsActivity : ComponentActivity() {
+class ReminderListActivity : ComponentActivity() {
     private lateinit var locationVM: LocationViewModel
     private lateinit var geofenceVM: GeofenceViewModel
     private lateinit var db: LocationDatabase
@@ -70,28 +70,28 @@ class LocationsActivity : ComponentActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {
             db = Room.databaseBuilder(
-                this@LocationsActivity.applicationContext,
+                this@ReminderListActivity.applicationContext,
                 LocationDatabase::class.java,
                 LOCATION_DATABASE_NAME
             ).build()
-            locationVM = ViewModelProvider(this@LocationsActivity)[LocationViewModel::class.java]
+            locationVM = ViewModelProvider(this@ReminderListActivity)[LocationViewModel::class.java]
             locationVM.locationDb = db
         }
 
         val locationParams = object: LocationParamInterface {
             override fun deleteLocation(location: WorldLocation) {
                 locationVM.removeLocation(location)
-                geofenceVM.remove(this@LocationsActivity, location)
+                geofenceVM.remove(this@ReminderListActivity, location)
             }
 
             override fun editLocation(location: WorldLocation) {
                 locationVM.addOrUpdateLocation(location)
             }
             override fun navigateBack() {
-                this@LocationsActivity.finish()
+                this@ReminderListActivity.finish()
             }
             override fun toastMessage(message: String) {
-                Toast.makeText(this@LocationsActivity.applicationContext, message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ReminderListActivity.applicationContext, message, Toast.LENGTH_SHORT).show()
             }
         }
 

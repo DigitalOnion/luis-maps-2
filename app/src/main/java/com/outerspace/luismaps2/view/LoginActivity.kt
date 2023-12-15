@@ -14,30 +14,29 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
 import com.outerspace.luismaps2.R
-import com.outerspace.luismaps2.broadcastReceivers.LOG_TAG
+import com.outerspace.luismaps2.domain.LOG_TAG
 import com.outerspace.luismaps2.viewModels.LocationViewModel
 import com.outerspace.luismaps2.viewModels.PermissionsViewModel
 import com.outerspace.luismaps2.repositories.EmailLoginDatabase
 import com.outerspace.luismaps2.ui.theme.LuisMaps2Theme
-import com.outerspace.luismaps2.viewModels.MainViewModel
+import com.outerspace.luismaps2.viewModels.LoginViewModel
 import java.lang.ref.WeakReference
 
 const val EMAIL_LOGIN_DB_NAME = "email-login.db"
 
-class MainActivity : ComponentActivity() {
-    private lateinit var mainVM: MainViewModel
+class LoginActivity : ComponentActivity() {
+    private lateinit var mainVM: LoginViewModel
     private lateinit var locationVM: LocationViewModel
     private lateinit var permissionsVM: PermissionsViewModel
-    private lateinit var mainView: MainView
+    private lateinit var mainView: LoginComposeView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        mainVM = ViewModelProvider(this)[MainViewModel::class.java]
+        mainVM = ViewModelProvider(this)[LoginViewModel::class.java]
         mainVM.weakActivity = WeakReference(this)
 
         locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
-        locationVM.weakActivity = WeakReference(this)
 
         permissionsVM = ViewModelProvider(this)[PermissionsViewModel::class.java]
         permissionsVM.weakActivity = WeakReference(this)
@@ -52,7 +51,7 @@ class MainActivity : ComponentActivity() {
                 // this action gets triggered at mainVM.logInSuccess when
                 // ACCESS_FINE, ACCESS_COARSE and ACCESS_BACKGROUND permissions
                 // are granted proceed to MapsActivity
-                val intent = Intent(this@MainActivity.baseContext, MapsActivity::class.java)
+                val intent = Intent(this@LoginActivity.baseContext, MapsActivity::class.java)
                 startActivity(intent)
             }
         }
@@ -80,7 +79,7 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }
 
-        mainView = MainView(this)
+        mainView = LoginComposeView(this)
 
         setContent {
             LuisMaps2Theme {

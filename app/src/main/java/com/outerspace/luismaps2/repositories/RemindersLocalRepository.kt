@@ -13,7 +13,7 @@ import com.outerspace.luismaps2.domain.WorldLocation
 
 @Entity(tableName = "Locations")
 data class WorldLocationEntity (
-    @PrimaryKey(autoGenerate = true) val locationId: Int = 0,
+    @PrimaryKey(autoGenerate = true) val locationId: Long = 0,
     @ColumnInfo(name = "lat") val lat: Double,
     @ColumnInfo(name = "lon") val lon: Double,
     @ColumnInfo(name = "title") val title: String,
@@ -28,19 +28,19 @@ data class WorldLocationEntity (
 @Dao
 interface WorldLocationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(location: WorldLocationEntity)
+    fun insert(location: WorldLocationEntity): Long
 
     @Query("select * from Locations")
     fun getLocations(): List<WorldLocationEntity>
 
-    @Query("select * from Locations where lat = :latitude and lon = :longitude")
-    fun getLocationAt(latitude: Double, longitude: Double): List<WorldLocationEntity>
+    @Query("select * from Locations where locationId = :poiId")
+    fun getLocationAt(poiId: Long): List<WorldLocationEntity>
 
-    @Query("delete from Locations where lat = :latitude and lon = :longitude")
-    fun deleteLocationAt(latitude: Double, longitude: Double)
+    @Query("delete from Locations where locationId = :poiId")
+    fun deleteLocationAt(poiId: Long)
 
-    @Query("update Locations set title = :title, description = :description where lat = :latitude and lon = :longitude")
-    fun updateLocationAt(latitude: Double, longitude: Double, title: String, description: String)
+    @Query("update Locations set title = :title, description = :description where locationId = :poiId")
+    fun updateLocationAt(poiId: Long, title: String, description: String)
 
     @Query("delete from Locations")
     fun deleteAll()

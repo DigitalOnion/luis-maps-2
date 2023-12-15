@@ -1,4 +1,4 @@
-package com.outerspace.luismaps2.broadcastReceivers
+package com.outerspace.luismaps2.backend
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,6 +8,7 @@ import android.content.Context.NOTIFICATION_SERVICE
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.text.Html
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -17,9 +18,11 @@ import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofenceStatusCodes
 import com.google.android.gms.location.GeofencingEvent
 import com.outerspace.luismaps2.R
-import com.outerspace.luismaps2.viewModels.GEOFENCE_NOTIFICATION_KEY
+import com.outerspace.luismaps2.domain.LOG_TAG
+import com.outerspace.luismaps2.viewModels.GEOFENCE_NOTIFICATION_DESCRIPTION_KEY
+import com.outerspace.luismaps2.viewModels.GEOFENCE_NOTIFICATION_TITLE_KEY
 
-const val LOG_TAG = "LUIS"
+
 const val CHANNEL_ID = "Luis_Maps_2_notifications_channel_id"
 const val GEOFENCE_NOTIFICATION_ID = 872 // random number
 
@@ -28,7 +31,7 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         val geofencingEvent = GeofencingEvent.fromIntent(intent) ?: return
         val bundle = intent.extras as Bundle
 
-        if (bundle == null || geofencingEvent.hasError()) {
+        if (geofencingEvent.hasError()) {
             val errorMessage = GeofenceStatusCodes
                 .getStatusCodeString(geofencingEvent.errorCode)
             Log.e(LOG_TAG, errorMessage)
@@ -36,7 +39,11 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         }
         val transition = geofencingEvent.geofenceTransition
         val geofenceMessage = getTransitionMessage(context, transition)
-        Toast.makeText(context, geofenceMessage, Toast.LENGTH_SHORT).show()
+        val spannableMessage = Html.fromHtml(context.getString(R.string.geofence_toast, geofenceMessage), Html.FROM_HTML_MODE_LEGACY)
+
+        val toast = Toast.makeText(context, spannableMessage, Toast.LENGTH_SHORT)
+
+        toast.show()
 
         when(transition) {
             Geofence.GEOFENCE_TRANSITION_DWELL -> {
@@ -78,15 +85,12 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
     private fun sendNotification(context: Context, bundle: Bundle) {
         val errorMessage = context.getString(R.string.geofence_error)
-        var notificationTitle: String = getString(context, R.string.app_title)
-        var notificationText: String = errorMessage
-        if (bundle.containsKey(GEOFENCE_NOTIFICATION_KEY)) {
-            val info = bundle.getString(GEOFENCE_NOTIFICATION_KEY)?.split("|")
-            if (info != null && info.size == 2) {
-                notificationTitle = "${notificationTitle} - ${info[0]}"
-                notificationText = "${info[1]}"
-            }
-        }
+        val notificationTitle =
+            "${getString(context, R.string.app_title)} - ${bundle.getString(
+            GEOFENCE_NOTIFICATION_TITLE_KEY)}"
+        val notificationText = bundle.getString(
+            GEOFENCE_NOTIFICATION_DESCRIPTION_KEY, errorMessage
+        )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.notification_icon)

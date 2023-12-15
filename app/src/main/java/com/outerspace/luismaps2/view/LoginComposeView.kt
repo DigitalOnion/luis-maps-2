@@ -46,15 +46,15 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import com.outerspace.luismaps2.R
-import com.outerspace.luismaps2.viewModels.MainViewModel
+import com.outerspace.luismaps2.viewModels.LoginViewModel
 
 // NOTE: I passed all the composable functions to this class for it to
 // contain the "view" (MVVM). Before it was in the MainActivity and was
 // becoming a mess of a file.
 
-class MainView(owner: ViewModelStoreOwner) {
+class LoginComposeView(owner: ViewModelStoreOwner) {
 
-    private var mainVM: MainViewModel = ViewModelProvider(owner)[MainViewModel::class.java]
+    private var mainVM: LoginViewModel = ViewModelProvider(owner)[LoginViewModel::class.java]
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable

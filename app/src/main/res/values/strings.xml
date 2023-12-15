@@ -68,4 +68,8 @@
     <string name="content_description_cancel">Cancel changes</string>
 
     <string name="geofence_error">Error recovering geofence info.</string>
+
+    <string name="geofence_toast">&lt;span style=\"background-color:yellow; padding:5px\"&gt;&lt;b&gt;%1$s&lt;/b&gt;&lt;/span&gt;</string>
+
+
 </resources>

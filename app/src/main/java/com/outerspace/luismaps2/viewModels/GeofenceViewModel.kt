@@ -12,21 +12,22 @@ import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
-import com.outerspace.luismaps2.broadcastReceivers.GeofenceBroadcastReceiver
-import com.outerspace.luismaps2.broadcastReceivers.LOG_TAG
+import com.outerspace.luismaps2.backend.GeofenceBroadcastReceiver
+import com.outerspace.luismaps2.domain.LOG_TAG
 import com.outerspace.luismaps2.domain.WorldLocation
 
 const val GEOFENCE_RADIUS_IN_METERS = 100F
 const val GEOFENCE_EXPIRATION_IN_MILLISECONDS = 365L * 24L * 60L * 60L * 1000L
 const val GEOFENCE_LOITERING_DELAY = 30 * 1000
-const val GEOFENCE_NOTIFICATION_KEY = "geofence_notification_key"
+const val GEOFENCE_NOTIFICATION_TITLE_KEY = "geofence_notification_title_key"
+const val GEOFENCE_NOTIFICATION_DESCRIPTION_KEY = "geofence_notification_description_key"
+const val GEOFENCE_NOTIFICATION_ID_KEY = "geofence_notification_id_key"
 
 class GeofenceViewModel: ViewModel() {
 
     fun add(activity:ComponentActivity, location: WorldLocation) {
-        if (location.id == 0) {
-            throw Error("ERROR: adding a geofence location with no ID")
-        }
+        assert(location.id != 0L)
+
         val geofence = Geofence.Builder()
             .setRequestId(location.id.toString())
             .setCircularRegion(
@@ -46,16 +47,21 @@ class GeofenceViewModel: ViewModel() {
 
         val geofencePendingIntent: PendingIntent by lazy {
             val bundle = Bundle()
-            bundle.putString(GEOFENCE_NOTIFICATION_KEY, "${location.title}|${location.description}")
-            val intent = Intent(activity, GeofenceBroadcastReceiver::class.java)
+            bundle.putString(GEOFENCE_NOTIFICATION_TITLE_KEY, location.title)
+            bundle.putString(GEOFENCE_NOTIFICATION_DESCRIPTION_KEY, location.description)
+            bundle.putLong(GEOFENCE_NOTIFICATION_ID_KEY, location.id)
+            val intent = Intent()
+            intent.action = "com.outerspace.luismaps2"
+            intent.setClass(activity.applicationContext, GeofenceBroadcastReceiver::class.java)
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             intent.putExtras(bundle)
-            PendingIntent.getBroadcast(activity, 0,
+            PendingIntent.getBroadcast(activity.applicationContext, location.id.toInt(),
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
         }
 
         val geofencingClient: GeofencingClient = LocationServices.getGeofencingClient(activity)
-        val context = activity.applicationContext ?: return
+        val context = activity.applicationContext
         val fineLocationGranted = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         val accessBackgroundGranted = context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (fineLocationGranted && accessBackgroundGranted) {
