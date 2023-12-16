@@ -185,6 +185,7 @@ private fun holder(location: WorldLocation, params: LocationParamInterface, modi
                 if (editMode.value) {
                     OutlinedTextField(value = reminderTitle,
                         onValueChange = { reminderTitle = it },
+                        enabled = !location.isMapsPoi,
                         label = { Text(text = stringResource(id = R.string.reminder_title_label)) },
                         placeholder = { Text(text = stringResource(id = R.string.reminder_title_placeholder)) },
                         modifier = Modifier.fillMaxWidth()
@@ -201,7 +202,7 @@ private fun holder(location: WorldLocation, params: LocationParamInterface, modi
                     Text(text = location.description,
                         style = MaterialTheme.typography.labelSmall
                     )
-                    Text(text = "${location.lat}, ${location.lon}; ${if (location.valid) "Valid" else "Not valid"}",
+                    Text(text = "${location.lat}, ${location.lon}; ${if (location.isMapsPoi) "Map's POI" else "User's POI"}",
                         style = MaterialTheme.typography.labelSmall
                     )
                 }

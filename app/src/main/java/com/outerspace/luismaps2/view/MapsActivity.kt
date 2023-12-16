@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 
 import android.view.Gravity
 import android.widget.Toast
@@ -81,6 +82,7 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.outerspace.luismaps2.R
+import com.outerspace.luismaps2.domain.LOG_TAG
 import com.outerspace.luismaps2.viewModels.GeofenceViewModel
 import com.outerspace.luismaps2.viewModels.LOCATION_DATABASE_NAME
 import com.outerspace.luismaps2.viewModels.LONDON_LAT
@@ -174,15 +176,6 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         super.onResume()
         locationVM.refreshPoiList()
     }
-
-//    override fun onStop() {
-//        super.onStop()
-//        lifecycleScope.launch(Dispatchers.IO) {
-//            locationVM.locationDb?.worldLocationDao()?.getLocations()?.forEach {
-//                geofenceVM.remove(this@MapsActivity, WorldLocation(it))
-//            }
-//        }
-//    }
 
     // NOTE: I use these MapParamsInterface and DialogParamsInterface to hoist various
     // objects and functions at once.
@@ -352,7 +345,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         var reminderTitle by remember { mutableStateOf(params.poi.value.title) }
         var reminderDescription by remember { mutableStateOf(params.poi.value.description) }
 
-        Dialog (onDismissRequest = { params.poi.value.valid = false }) {
+        Dialog (onDismissRequest = { }) {
             val dialogWindowProvider = LocalView.current.parent as DialogWindowProvider // Reference: https://stackoverflow.com/questions/70390697/position-alert-dialog-in-android-compose
             dialogWindowProvider.window.setGravity(Gravity.BOTTOM)
             Card (
@@ -367,6 +360,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                         .padding(16.dp),
                 ) {
                     OutlinedTextField(value = reminderTitle,
+                        enabled = !params.poi.value.isMapsPoi,
                         onValueChange = { reminderTitle = it },
                         label = { Text(text = stringResource(id = R.string.reminder_title_label)) },
                         placeholder = { Text(text = stringResource(id = R.string.reminder_title_placeholder)) },
@@ -385,7 +379,6 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
                         Button(onClick = {
-                            params.poi.value.valid = false
                             params.showInputPoiDialog(false)
                         }) {
                             Text(text = stringResource(R.string.cancel_button_face))
@@ -394,7 +387,6 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                             params.poi.value.apply {
                                 title = reminderTitle
                                 description = reminderDescription
-                                valid = true
                             }
                             params.onClickCreatePoi(params.poi.value)
                             params.showInputPoiDialog(false)
@@ -431,6 +423,13 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
             cameraPositionState = mapParams.cameraPositionState,
             onMapClick = {
                 val wl = WorldLocation(it)
+                wl.isMapsPoi = false
+                mapParams.onMapClick(wl)
+            },
+            onPOIClick = {  // it is a PointOfInterest
+                val wl = WorldLocation(it.latLng)
+                wl.title = it.name
+                wl.isMapsPoi = true
                 mapParams.onMapClick(wl)
             },
             onMyLocationButtonClick = {
@@ -449,6 +448,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                 true
             }
         ) {
+            // markers for all defined POI
             for (location in mapParams.getPoiList()) {
                 Marker(
                     state = MarkerState(position = location.getLatLng()),
@@ -472,13 +472,14 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                     },
                 )
             }
+            // A marker for the current location
             Marker(
                 state = MarkerState(position = mapParams.currentLocation.value.getLatLng()),
                 icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
                 onClick = {
                     mapParams.editLocation(mapParams.currentLocation.value)
                     false
-                },
+                }
             )
         }
     }

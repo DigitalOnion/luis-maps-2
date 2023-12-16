@@ -2,6 +2,7 @@ package com.outerspace.luismaps2.backend
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Context.NOTIFICATION_SERVICE
@@ -14,17 +15,21 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getString
+import androidx.core.os.bundleOf
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofenceStatusCodes
 import com.google.android.gms.location.GeofencingEvent
 import com.outerspace.luismaps2.R
 import com.outerspace.luismaps2.domain.LOG_TAG
+import com.outerspace.luismaps2.view.POIDetailsActivity
 import com.outerspace.luismaps2.viewModels.GEOFENCE_NOTIFICATION_DESCRIPTION_KEY
+import com.outerspace.luismaps2.viewModels.GEOFENCE_NOTIFICATION_ID_KEY
 import com.outerspace.luismaps2.viewModels.GEOFENCE_NOTIFICATION_TITLE_KEY
 
 
 const val CHANNEL_ID = "Luis_Maps_2_notifications_channel_id"
 const val GEOFENCE_NOTIFICATION_ID = 872 // random number
+const val REQUEST_CODE = 0
 
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -85,18 +90,32 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
     private fun sendNotification(context: Context, bundle: Bundle) {
         val errorMessage = context.getString(R.string.geofence_error)
-        val notificationTitle =
-            "${getString(context, R.string.app_title)} - ${bundle.getString(
-            GEOFENCE_NOTIFICATION_TITLE_KEY)}"
+        val notificationTitle = bundle.getString(
+            GEOFENCE_NOTIFICATION_TITLE_KEY, errorMessage)
         val notificationText = bundle.getString(
             GEOFENCE_NOTIFICATION_DESCRIPTION_KEY, errorMessage
         )
+        val locationId = bundle.getLong(GEOFENCE_NOTIFICATION_ID_KEY, 0)
+
+        val detailsBundle = bundleOf(
+            Pair(GEOFENCE_NOTIFICATION_TITLE_KEY, notificationTitle),
+            Pair(GEOFENCE_NOTIFICATION_DESCRIPTION_KEY, notificationText),
+            Pair(GEOFENCE_NOTIFICATION_ID_KEY, locationId)
+        )
+        val intent = Intent(context, POIDetailsActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtras(detailsBundle)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(context, REQUEST_CODE, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.notification_icon)
             .setContentTitle(notificationTitle)
             .setContentText(notificationText)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
 
         val notificationManager = ContextCompat.getSystemService(context, NotificationManager::class.java)
         notificationManager?.notify(GEOFENCE_NOTIFICATION_ID, builder.build())

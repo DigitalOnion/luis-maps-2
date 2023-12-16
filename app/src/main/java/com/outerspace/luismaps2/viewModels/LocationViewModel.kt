@@ -64,8 +64,9 @@ class LocationViewModel: ViewModel() {
         runBlocking(Dispatchers.IO) {
             l = populatePoiList(locationDb).await()
         }
-        mutablePoiList.value = mutableListOf()
-        mutablePoiList.value?.addAll(l)
+        val resultList = mutableListOf<WorldLocation>()
+        resultList.addAll(l)
+        mutablePoiList.value = resultList
     }
 
     fun addOrUpdateLocation(location: WorldLocation) {

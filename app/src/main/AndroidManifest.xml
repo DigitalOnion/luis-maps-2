@@ -20,11 +20,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.LuisMaps2"
         tools:targetApi="34">
-        <activity
-            android:name=".view.ReminderListActivity"
-            android:exported="false"
-            android:label="@string/title_activity_locations"
-            android:theme="@style/Theme.LuisMaps2" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -37,21 +32,46 @@
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".view.MapsActivity"
             android:exported="false"
             android:label="@string/title_activity_maps" />
 
-        <receiver android:name=".backend.GeofenceBroadcastReceiver"
+        <activity
+            android:name=".view.ReminderListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_locations"
+            android:theme="@style/Theme.LuisMaps2" />
+
+        <!-- NotificationTargetActivity is a special activity.
+           it only serves as a target to notifications, showing
+           the Reminder whose geofence was entered and dwell.
+                - taskAffinity -> prevents it to become a default activity
+                - excludeFromRecents -> prevent is to be part of the Recent Screens, cannot navigate to it
+           -->
+        <activity
+            android:name=".view.POIDetailsActivity"
+            android:exported="false"
+            android:label="@string/poi_details_activity"
+            android:theme="@style/Theme.LuisMaps2"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
+        <receiver
+            android:name=".backend.GeofenceBroadcastReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.outerspace.luismaps2"/>
+                <action android:name="com.outerspace.luismaps2" />
             </intent-filter>
         </receiver>
+
     </application>
 
 </manifest>

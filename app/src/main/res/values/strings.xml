@@ -70,6 +70,9 @@
     <string name="geofence_error">Error recovering geofence info.</string>
 
     <string name="geofence_toast">&lt;span style=\"background-color:yellow; padding:5px\"&gt;&lt;b&gt;%1$s&lt;/b&gt;&lt;/span&gt;</string>
-
+    <string name="poi_details_activity">POIDetailsActivity</string>
+    <string name="poi_details_activity_title">Reminder for your current location:</string>
+    <string name="poi_details_title">Point of Interest:</string>
+    <string name="poi_details_description">Reminder:</string>
 
 </resources>
