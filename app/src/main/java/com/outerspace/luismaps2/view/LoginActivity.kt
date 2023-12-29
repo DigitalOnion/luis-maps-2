@@ -20,10 +20,12 @@ import com.outerspace.luismaps2.viewModels.PermissionsViewModel
 import com.outerspace.luismaps2.repositories.EmailLoginDatabase
 import com.outerspace.luismaps2.ui.theme.LuisMaps2Theme
 import com.outerspace.luismaps2.viewModels.LoginViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import java.lang.ref.WeakReference
 
 const val EMAIL_LOGIN_DB_NAME = "email-login.db"
 
+@AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
     private lateinit var mainVM: LoginViewModel
     private lateinit var locationVM: LocationViewModel

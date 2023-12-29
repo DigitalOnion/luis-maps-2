@@ -46,6 +46,7 @@ import com.outerspace.luismaps2.repositories.LocationDatabase
 import com.outerspace.luismaps2.ui.theme.LuisMaps2Theme
 import com.outerspace.luismaps2.viewModels.LocationViewModel
 import com.outerspace.luismaps2.domain.WorldLocation
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -57,6 +58,7 @@ private interface LocationParamInterface {
     fun toastMessage(message: String)
 }
 
+@AndroidEntryPoint
 class ReminderListActivity : ComponentActivity() {
     private lateinit var locationVM: LocationViewModel
     private lateinit var geofenceVM: GeofenceViewModel
@@ -65,18 +67,8 @@ class ReminderListActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
-
-        CoroutineScope(Dispatchers.IO).launch {
-            db = Room.databaseBuilder(
-                this@ReminderListActivity.applicationContext,
-                LocationDatabase::class.java,
-                LOCATION_DATABASE_NAME
-            ).build()
-            locationVM = ViewModelProvider(this@ReminderListActivity)[LocationViewModel::class.java]
-            locationVM.locationDb = db
-        }
+        locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
 
         val locationParams = object: LocationParamInterface {
             override fun deleteLocation(location: WorldLocation) {

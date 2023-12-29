@@ -1,16 +1,7 @@
 package com.outerspace.luismaps2
 
 import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
 
-class MapsApplication: Application() {
-
-    override fun onCreate() {
-        super.onCreate()
-        instance = this
-    }
-
-    companion object {
-        lateinit var instance: MapsApplication
-            private set
-    }
-}
+@HiltAndroidApp
+class MapsApplication: Application()

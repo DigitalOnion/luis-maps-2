@@ -116,10 +116,10 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         initialLocation = WorldLocation(initialLatitude, initialLongitude)
 
         locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
-        locationVM.locationDb =
-            Room.databaseBuilder(
-                this.applicationContext, LocationDatabase::class.java, LOCATION_DATABASE_NAME
-            ).build()
+//        locationVM.locationDb =
+//            Room.databaseBuilder(
+//                this.applicationContext, LocationDatabase::class.java, LOCATION_DATABASE_NAME
+//            ).build()
 
         geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
 
@@ -143,7 +143,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         super.onStart()
 
         lifecycleScope.launch(Dispatchers.IO) {
-            locationVM.locationDb?.worldLocationDao()?.getLocations()?.forEach {
+            locationVM.getLocations().forEach {
                 geofenceVM.add(this@MapsActivity, WorldLocation(it))
             }
         }
