@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 
 import android.view.Gravity
 import android.widget.Toast
@@ -62,7 +61,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.room.Room
 import com.google.android.gms.location.Granularity
 import com.google.android.gms.location.LocationAvailability
 import com.google.android.gms.location.LocationCallback
@@ -82,14 +80,11 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.outerspace.luismaps2.R
-import com.outerspace.luismaps2.domain.LOG_TAG
 import com.outerspace.luismaps2.viewModels.GeofenceViewModel
-import com.outerspace.luismaps2.viewModels.LOCATION_DATABASE_NAME
 import com.outerspace.luismaps2.viewModels.LONDON_LAT
 import com.outerspace.luismaps2.ui.theme.LuisMaps2Theme
 import com.outerspace.luismaps2.viewModels.LONDON_LOCATION
 import com.outerspace.luismaps2.viewModels.LONDON_LON
-import com.outerspace.luismaps2.repositories.LocationDatabase
 import com.outerspace.luismaps2.viewModels.LocationViewModel
 import com.outerspace.luismaps2.domain.WorldLocation
 import com.outerspace.luismaps2.viewModels.LOCATION_REFRESH_PERIOD

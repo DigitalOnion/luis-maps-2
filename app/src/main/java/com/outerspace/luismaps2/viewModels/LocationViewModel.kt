@@ -5,13 +5,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.outerspace.luismaps2.domain.WorldLocation
-import com.outerspace.luismaps2.repositories.LocationDatabase
 import com.outerspace.luismaps2.repositories.RemindersLocalRepository
 import com.outerspace.luismaps2.repositories.WorldLocationEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject

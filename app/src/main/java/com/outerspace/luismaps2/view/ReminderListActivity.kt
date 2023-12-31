@@ -38,11 +38,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
-import androidx.room.Room
 import com.outerspace.luismaps2.R
 import com.outerspace.luismaps2.viewModels.GeofenceViewModel
-import com.outerspace.luismaps2.viewModels.LOCATION_DATABASE_NAME
-import com.outerspace.luismaps2.repositories.LocationDatabase
 import com.outerspace.luismaps2.ui.theme.LuisMaps2Theme
 import com.outerspace.luismaps2.viewModels.LocationViewModel
 import com.outerspace.luismaps2.domain.WorldLocation

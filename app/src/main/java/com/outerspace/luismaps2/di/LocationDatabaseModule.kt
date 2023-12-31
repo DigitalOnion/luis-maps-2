@@ -2,7 +2,7 @@ package com.outerspace.luismaps2.di
 
 import android.content.Context
 import androidx.room.Room
-import com.outerspace.luismaps2.repositories.LocationDatabase
+import com.outerspace.luismaps2.repositories.WorldLocationDatabase
 import com.outerspace.luismaps2.viewModels.LOCATION_DATABASE_NAME
 import dagger.Module
 import dagger.Provides
@@ -18,13 +18,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 @InstallIn(ViewModelComponent::class)
 object LocationDatabaseModule {
     @Provides
-    fun provideLocationDatabase(@ApplicationContext appContext: Context): LocationDatabase =
+    fun provideLocationDatabase(@ApplicationContext appContext: Context): WorldLocationDatabase =
         Room.databaseBuilder(
             appContext,
-            LocationDatabase::class.java,
+            WorldLocationDatabase::class.java,
             LOCATION_DATABASE_NAME
         ).build()
 
     @Provides
-    fun provideWorldLocationDao(db: LocationDatabase) = db.worldLocationDao()
+    fun provideWorldLocationDao(db: WorldLocationDatabase) = db.worldLocationDao()
 }
