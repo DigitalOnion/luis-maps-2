@@ -7,6 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,16 +28,15 @@ const val EMAIL_LOGIN_DB_NAME = "email-login.db"
 
 @AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
-    private lateinit var mainVM: LoginViewModel
+    private lateinit var loginVM: LoginViewModel
     private lateinit var locationVM: LocationViewModel
     private lateinit var permissionsVM: PermissionsViewModel
     private lateinit var mainView: LoginComposeView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        mainVM = ViewModelProvider(this)[LoginViewModel::class.java]
-        mainVM.weakActivity = WeakReference(this)
+        loginVM = ViewModelProvider(this)[LoginViewModel::class.java]
+        loginVM.weakActivity = WeakReference(this)
 
         locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
 
@@ -58,13 +58,7 @@ class LoginActivity : ComponentActivity() {
             }
         }
 
-        mainVM.setEmailDb(
-            Room.databaseBuilder(
-                this.applicationContext, EmailLoginDatabase::class.java, EMAIL_LOGIN_DB_NAME
-            ).build()
-        )
-
-        mainVM.logInSuccess.observe(this) {
+        loginVM.logInSuccess.observe(this) {
             if (it) {
                 permissionsVM.requestLocationPermissions()
             } else {
@@ -72,16 +66,16 @@ class LoginActivity : ComponentActivity() {
             }
         }
 
-        mainVM.currentUser.observe(this) {
+        loginVM.currentUser.observe(this) {
             val text = getString(R.string.login_success_message, it)
             Toast.makeText(this, text, Toast.LENGTH_LONG).show()
         }
 
-        mainVM.message.observe(this) {
+        loginVM.message.observe(this) {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }
 
-        mainView = LoginComposeView(this)
+        mainView = LoginComposeView(loginVM)
 
         setContent {
             LuisMaps2Theme {

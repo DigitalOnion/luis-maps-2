@@ -1,10 +1,12 @@
 package com.outerspace.luismaps2.viewModels
 
+import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,31 +19,43 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.outerspace.luismaps2.R
+import com.outerspace.luismaps2.domain.LoginScreens
 import com.outerspace.luismaps2.repositories.EmailLogin
 import com.outerspace.luismaps2.repositories.EmailLoginDatabase
+import com.outerspace.luismaps2.repositories.EmailLoginLocalRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
+import javax.inject.Inject
 
-class LoginViewModel: ViewModel() {
+@HiltViewModel
+class LoginViewModel
+    @Inject constructor(private val emailRepo: EmailLoginLocalRepository)
+    : ViewModel()
+{
     private var showProgressBar: MutableLiveData<Boolean> = MutableLiveData()
     var logInSuccess: MutableLiveData<Boolean> = MutableLiveData()
     var message: MutableLiveData<Int> = MutableLiveData()
     var currentUser: MutableLiveData<String> = MutableLiveData()
 
-    var mutableLoginButtons: MutableLiveData<Boolean> = MutableLiveData(true)
-    var mutableEmailSignIn: MutableLiveData<Boolean> = MutableLiveData(true)
-    var mutableEmailSignOn: MutableLiveData<Boolean> = MutableLiveData(false)
-    var mutableUpdatePassword: MutableLiveData<Boolean> = MutableLiveData(false)
+    var mutableLoginScreen: MutableLiveData<LoginScreens> = MutableLiveData(LoginScreens.CHOOSE_LOGIN)
 
     private var signInClient: SignInClient? = null
     private lateinit var auth: FirebaseAuth
     private lateinit var signInLauncher: ActivityResultLauncher<IntentSenderRequest>
 
+    lateinit var weakLifecycleOwner: WeakReference<LifecycleOwner>
+        private set
+
     var weakActivity: WeakReference<ComponentActivity> = WeakReference(null)
         set(weakActivity) {
             field = weakActivity
+
+            weakLifecycleOwner = WeakReference(weakActivity.get())
+
             weakActivity.get()?.applicationContext?.let {
                 signInClient = Identity.getSignInClient(it)
             }
@@ -113,15 +127,10 @@ class LoginViewModel: ViewModel() {
      * Email / Password sign in
      */
 
-    private lateinit var emailDb: EmailLoginDatabase
-
-    fun setEmailDb(db: EmailLoginDatabase) { emailDb = db }
-
-    fun emailSignIn(loginName: String, password: String) {
+    fun emailSignIn(loginName: String, password: String, stub: String) {
         viewModelScope.launch {
             val d = viewModelScope.async(Dispatchers.IO) {
-                val dao = emailDb.emailLoginDao()
-                dao.passwordMatch(loginName, password)
+                emailRepo.passwordMatch(loginName, password)
             }
             val b = d.await()
             logInSuccess.value = b
@@ -129,12 +138,11 @@ class LoginViewModel: ViewModel() {
         }
     }
 
-    fun emailSignOn(loginName: String, password: String) {
+    fun emailSignOn(loginName: String, password: String, stub: String) {
         viewModelScope.launch {
             val d = viewModelScope.async(Dispatchers.IO) {
-                val dao = emailDb.emailLoginDao()
-                if (dao.countEmailByName(loginName) == 0) {
-                    dao.insert(EmailLogin(emailName = loginName, password = password))
+                if (emailRepo.countEmailByName(loginName) == 0) {
+                    emailRepo.insert(EmailLogin(emailName = loginName, password = password))
                     R.string.sign_on_success
                 } else {
                     R.string.user_exists
@@ -147,9 +155,9 @@ class LoginViewModel: ViewModel() {
     fun emailUpdatePassword(loginName: String, password: String, newPassword: String) {
         viewModelScope.launch {
             val d = viewModelScope.async(Dispatchers.IO) {
-                val dao = emailDb.emailLoginDao()
-                if (dao.countEmailByName(loginName) > 0 && dao.passwordMatch(loginName, password)) {
-                    dao.updatePassword(loginName, password, newPassword)
+                if (emailRepo.countEmailByName(loginName) > 0 &&
+                    emailRepo.passwordMatch(loginName, password)) {
+                    emailRepo.updatePassword(loginName, password, newPassword)
                     R.string.password_update_success
                 } else {
                     R.string.password_update_failed

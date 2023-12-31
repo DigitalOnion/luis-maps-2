@@ -93,11 +93,13 @@ import com.outerspace.luismaps2.repositories.LocationDatabase
 import com.outerspace.luismaps2.viewModels.LocationViewModel
 import com.outerspace.luismaps2.domain.WorldLocation
 import com.outerspace.luismaps2.viewModels.LOCATION_REFRESH_PERIOD
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
     private lateinit var locationVM: LocationViewModel
     private lateinit var geofenceVM: GeofenceViewModel
@@ -109,19 +111,14 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
+        geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
 
         val sharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
         val initialLatitude = sharedPreferences.getString(LONDON_LAT, LONDON_LOCATION.lat.toString())!!.toDouble()
         val initialLongitude = sharedPreferences.getString(LONDON_LON, LONDON_LOCATION.lon.toString())!!.toDouble()
         initialLocation = WorldLocation(initialLatitude, initialLongitude)
 
-        locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
-//        locationVM.locationDb =
-//            Room.databaseBuilder(
-//                this.applicationContext, LocationDatabase::class.java, LOCATION_DATABASE_NAME
-//            ).build()
-
-        geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
 
         setContent {
             LuisMaps2Theme {

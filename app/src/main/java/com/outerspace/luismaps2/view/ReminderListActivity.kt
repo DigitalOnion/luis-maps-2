@@ -62,13 +62,12 @@ private interface LocationParamInterface {
 class ReminderListActivity : ComponentActivity() {
     private lateinit var locationVM: LocationViewModel
     private lateinit var geofenceVM: GeofenceViewModel
-    private lateinit var db: LocationDatabase
     private lateinit var locations: List<WorldLocation>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
         locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
+        geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
 
         val locationParams = object: LocationParamInterface {
             override fun deleteLocation(location: WorldLocation) {
@@ -112,7 +111,7 @@ class ReminderListActivity : ComponentActivity() {
 
     private fun fetchLocations(forceRecompose: MutableState<Int>) {
         CoroutineScope(Dispatchers.IO).launch {
-            locations = db.worldLocationDao().getLocations().map{ WorldLocation(it) }
+            locations = locationVM.getLocations().map{ WorldLocation(it) }
             forceRecompose.value += 1
         }
     }

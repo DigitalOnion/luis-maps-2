@@ -43,19 +43,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.LifecycleOwner
 import com.outerspace.luismaps2.R
+import com.outerspace.luismaps2.domain.LoginScreens
 import com.outerspace.luismaps2.viewModels.LoginViewModel
 
 // NOTE: I passed all the composable functions to this class for it to
 // contain the "view" (MVVM). Before it was in the MainActivity and was
 // becoming a mess of a file.
 
-class LoginComposeView(owner: ViewModelStoreOwner) {
-
-    private var mainVM: LoginViewModel = ViewModelProvider(owner)[LoginViewModel::class.java]
-
+class LoginComposeView(private val loginVM: LoginViewModel) {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun mainLoginScreen(modifier: Modifier = Modifier) {
@@ -87,23 +84,20 @@ class LoginComposeView(owner: ViewModelStoreOwner) {
                         ) {
                             DropdownMenuItem(text = { Text(stringResource(R.string.google_sign_in_menu)) },
                                 onClick = { showMenu = false
-                                    mainVM.mutableLoginButtons.value = true
-                                    mainVM.googleSignIn()
+                                    loginVM.mutableLoginScreen.value = LoginScreens.CHOOSE_LOGIN
+                                    loginVM.googleSignIn()
                                 })
                             DropdownMenuItem(text = { Text(stringResource(R.string.email_sign_in_menu)) },
                                 onClick = { showMenu = false
-                                    mainVM.mutableLoginButtons.value = false
-                                    mainVM.mutableEmailSignIn.value = true
+                                    loginVM.mutableLoginScreen.value = LoginScreens.EMAIL_LOGIN
                                 })
                             DropdownMenuItem(text = { Text(stringResource(R.string.email_sign_on_menu)) },
                                 onClick = { showMenu = false
-                                    mainVM.mutableLoginButtons.value = false
-                                    mainVM.mutableEmailSignOn.value = true
+                                    loginVM.mutableLoginScreen.value = LoginScreens.EMAIL_SIGN_ON
                                 })
                             DropdownMenuItem(text = { Text(stringResource(R.string.email_update_menu)) },
                                 onClick = { showMenu = false
-                                    mainVM.mutableLoginButtons.value = false
-                                    mainVM.mutableUpdatePassword.value = true
+                                    loginVM.mutableLoginScreen.value = LoginScreens.PASSWORD_UPDATE
                                 })
                         }
                     },
@@ -119,12 +113,12 @@ class LoginComposeView(owner: ViewModelStoreOwner) {
     private fun loginScreen(modifier: Modifier = Modifier,
                             innerPadding: PaddingValues = PaddingValues(0.dp)
     ) {
-        var showLoginButtons by remember { mutableStateOf(true) }
+        var showLoginScreen by remember { mutableStateOf(LoginScreens.CHOOSE_LOGIN) }
 
-        val owner = mainVM.weakActivity.get() ?: return
+        val owner: LifecycleOwner = loginVM.weakLifecycleOwner.get() ?: return
 
-        mainVM.mutableLoginButtons.observe(owner) {
-            showLoginButtons = it
+        loginVM.mutableLoginScreen.observe(owner) {
+            showLoginScreen = it
         }
 
         Box(modifier = Modifier
@@ -141,10 +135,11 @@ class LoginComposeView(owner: ViewModelStoreOwner) {
             Column(Modifier.weight(1F)) {
                 title3D(modifier)
             }
-            if (showLoginButtons) {
-                mainLoginButtons(modifier)
-            } else {
-                mainEmailLogin(modifier)
+            when (showLoginScreen) {
+                LoginScreens.CHOOSE_LOGIN -> mainLoginButtons(modifier)
+                LoginScreens.EMAIL_LOGIN -> mainEmailLogin(LoginScreens.EMAIL_LOGIN, loginVM::emailSignIn,  modifier)
+                LoginScreens.EMAIL_SIGN_ON -> mainEmailLogin(LoginScreens.EMAIL_SIGN_ON, loginVM::emailSignOn, modifier)
+                LoginScreens.PASSWORD_UPDATE -> mainEmailLogin(LoginScreens.PASSWORD_UPDATE, loginVM::emailUpdatePassword, modifier)
             }
         }
     }
@@ -169,13 +164,13 @@ class LoginComposeView(owner: ViewModelStoreOwner) {
                         modifier = Modifier.fillMaxWidth(),
                         content = { Text(stringResource(R.string.login_google_button_face)) },
                         onClick = {
-                            mainVM.googleSignIn()
+                            loginVM.googleSignIn()
                         })
                     Button(
                         modifier = Modifier.fillMaxWidth(),
                         content = { Text(stringResource(R.string.login_email_password_button_face)) },
                         onClick = {
-                            mainVM.mutableLoginButtons.value = false
+                            loginVM.mutableLoginScreen.value = LoginScreens.EMAIL_LOGIN
                         })
                 }
             }
@@ -184,56 +179,44 @@ class LoginComposeView(owner: ViewModelStoreOwner) {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun mainEmailLogin(modifier: Modifier = Modifier) {
+    private fun mainEmailLogin(
+        screen: LoginScreens,
+        onClick: (loginEmail: String, loginPassword: String, newPassword: String) -> Unit,
+        modifier: Modifier = Modifier) {
+
+        val whiteColors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            disabledContainerColor = Color.White,
+        )
+
         var loginEmail by remember { mutableStateOf("") }
         var loginPassword by remember { mutableStateOf("") }
         var newPassword by remember { mutableStateOf("") }
 
-        val owner = mainVM.weakActivity.get() ?: return
-
-        var updatePasswordUI by remember { mutableStateOf(false) }  // execution order is important
-        var signOnUI by remember { mutableStateOf(false) }
-        var signInUI by remember { mutableStateOf(true) }
-
-        mainVM.mutableUpdatePassword.observe(owner) { signInUI = false; signOnUI = false; updatePasswordUI = true }
-        mainVM.mutableEmailSignOn.observe(owner) { signInUI = false; signOnUI = true; updatePasswordUI = false }
-        mainVM.mutableEmailSignIn.observe(owner) { signInUI = true; signOnUI = false; updatePasswordUI = false }
-
         Column {
             OutlinedTextField(value = loginEmail,
                 onValueChange = { loginEmail = it },
-                label = { Text(text = stringResource(id = R.string.login_email)) },
+                label = { Text(text = stringResource(id = screen.loginLabel)) },
                 placeholder = { Text(text = stringResource(id = R.string.login_email_instructions)) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    disabledContainerColor = Color.White,
-                ),
+                colors = whiteColors,
                 modifier = modifier.fillMaxWidth()
             )
 
             OutlinedTextField(value = loginPassword,
                 onValueChange = { loginPassword = it},
-                label = { Text(text = stringResource(id = R.string.password_email)) },
+                label = { Text(text = stringResource(screen.passwordLabel)) },
                 placeholder = { Text(text = stringResource(id = R.string.password_email_instructions)) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    disabledContainerColor = Color.White,
-                ),
+                colors = whiteColors,
                 modifier = modifier.fillMaxWidth()
             )
 
-            if (updatePasswordUI) {
+            if (screen == LoginScreens.PASSWORD_UPDATE) {
                 OutlinedTextField(value = newPassword,
                     onValueChange = { newPassword = it},
                     label = { Text(text = stringResource(id = R.string.new_password)) },
                     placeholder = { Text(text = stringResource(id = R.string.new_password_instructions)) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        disabledContainerColor = Color.White,
-                    ),
+                    colors = whiteColors,
                     modifier = modifier.fillMaxWidth()
                 )
             }
@@ -246,39 +229,14 @@ class LoginComposeView(owner: ViewModelStoreOwner) {
                 Button(
                     modifier = modifier.weight(3F),
                     content = { Text(stringResource(R.string.cancel_button_face)) },
-                    onClick = { mainVM.mutableLoginButtons.value = true },
+                    onClick = { loginVM.mutableLoginScreen.value = LoginScreens.CHOOSE_LOGIN },
                 )
                 Spacer(modifier = modifier.weight(1F))
-                Column(modifier = modifier.weight(6F)) {
-                    if (signInUI) {
-                        Button(
-                            modifier = modifier.fillMaxWidth(),
-                            content = { Text(stringResource(R.string.login_button_face)) },
-                            onClick = {
-                                mainVM.emailSignIn(loginEmail, loginPassword) }
-                        )
-                    }
-                    if (signOnUI) {
-                        Button(
-                            modifier = modifier.fillMaxWidth(),
-                            content = { Text(stringResource(R.string.signon_button_face)) },
-                            onClick = { mainVM.emailSignOn(loginEmail, loginPassword) }
-                        )
-                    }
-                    if (updatePasswordUI) {
-                        Button(
-                            modifier = modifier.fillMaxWidth(),
-                            content = { Text(stringResource(R.string.update_button_face)) },
-                            onClick = {
-                                mainVM.emailUpdatePassword(
-                                    loginEmail,
-                                    loginPassword,
-                                    newPassword
-                                )
-                            }
-                        )
-                    }
-                }
+                Button(
+                    modifier = modifier.fillMaxWidth(),
+                    content = { Text(stringResource(screen.buttonLabel)) },
+                    onClick = { onClick(loginEmail, loginPassword, newPassword) }
+                )
             }
         }
     }

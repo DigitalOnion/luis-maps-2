@@ -45,6 +45,11 @@
     <string name="password_email_instructions">Enter your password</string>
     <string name="new_password">New Password</string>
     <string name="new_password_instructions">Enter new password</string>
+    <string name="sign_on_email">New account email</string>
+    <string name="sign_on_email_instructions">Sign on by entering the email for a new account</string>
+    <string name="sign_on_password">New account password</string>
+    <string name="sign_on_password_email_instructions">Enter the password for the new account</string>
+
 
     <string name="reminder_title_label">Reminder\'s title</string>
     <string name="reminder_title_placeholder">Enter the reminder\'s title</string>

@@ -3,7 +3,6 @@ package com.outerspace.luismaps2.di
 import android.content.Context
 import androidx.room.Room
 import com.outerspace.luismaps2.repositories.LocationDatabase
-import com.outerspace.luismaps2.repositories.WorldLocationDao
 import com.outerspace.luismaps2.viewModels.LOCATION_DATABASE_NAME
 import dagger.Module
 import dagger.Provides
