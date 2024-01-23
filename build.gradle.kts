@@ -5,6 +5,6 @@ plugins {
     id("com.google.gms.google-services") version "4.4.0" apply false
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin") version "2.0.1" apply false
     id("com.google.dagger.hilt.android") version "2.50" apply false
-0
+
     id("com.google.devtools.ksp") version "1.9.10-1.0.13" apply false
 }

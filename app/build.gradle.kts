@@ -127,6 +127,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
     // -------------------
+
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.0.0")
     testImplementation("androidx.test:core-ktx:1.5.0")
     testImplementation("androidx.test:runner:1.5.2")
     testImplementation("androidx.test.ext:junit-ktx:1.1.5")

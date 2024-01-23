@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
-        android:name=".MapsApplication"
+        android:name="com.udacity.project4.MapsApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -26,7 +26,7 @@
             android:value="${MAPS_API_KEY}" />
 
         <activity
-            android:name=".view.LoginActivity"
+            android:name="com.udacity.project4.view.LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.LuisMaps2"
             android:windowSoftInputMode="adjustResize">
@@ -38,12 +38,12 @@
         </activity>
 
         <activity
-            android:name=".view.MapsActivity"
+            android:name="com.udacity.project4.view.MapsActivity"
             android:exported="false"
             android:label="@string/title_activity_maps" />
 
         <activity
-            android:name=".view.ReminderListActivity"
+            android:name="com.udacity.project4.view.ReminderListActivity"
             android:exported="false"
             android:label="@string/title_activity_locations"
             android:theme="@style/Theme.LuisMaps2" />
@@ -55,7 +55,7 @@
                 - excludeFromRecents -> prevent is to be part of the Recent Screens, cannot navigate to it
            -->
         <activity
-            android:name=".view.POIDetailsActivity"
+            android:name="com.udacity.project4.view.POIDetailsActivity"
             android:exported="false"
             android:label="@string/poi_details_activity"
             android:theme="@style/Theme.LuisMaps2"
@@ -64,7 +64,7 @@
             android:excludeFromRecents="true" />
 
         <receiver
-            android:name=".backend.GeofenceBroadcastReceiver"
+            android:name="com.udacity.project4.backend.GeofenceBroadcastReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
