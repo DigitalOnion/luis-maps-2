@@ -35,21 +35,23 @@ import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.outerspace.luismaps2.R
-import com.udacity.project4.viewModels.GeofenceViewModel
-import com.udacity.project4.theme.LuisMaps2Theme
-import com.udacity.project4.viewModels.LocationViewModel
 import com.udacity.project4.domain.WorldLocation
+import com.udacity.project4.theme.LuisMaps2Theme
+import com.udacity.project4.viewModels.GeofenceViewModel
+import com.udacity.project4.viewModels.LocationViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-private interface LocationParamInterface {
+interface LocationParamInterface {
     fun navigateBack()
     fun deleteLocation(location: WorldLocation)
     fun editLocation(location: WorldLocation)
@@ -64,7 +66,7 @@ class ReminderListActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
+        locationVM = ViewModelProvider(this)[LocationViewModel::class.java]     // since the Activity is annotated with @AndroidEntryPoint, the view models are injected with the ViewModelProvider0
         geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
 
         val locationParams = object: LocationParamInterface {
@@ -141,9 +143,10 @@ private fun emptyLocationsList(params: LocationParamInterface, modifier:Modifier
 }
 
 @Composable
-private fun locationList(locationList: List<WorldLocation>, params: LocationParamInterface, modifier: Modifier = Modifier) {
+fun locationList(locationList: List<WorldLocation>, params: LocationParamInterface, modifier: Modifier = Modifier) {
+    val cdLocalList = stringResource(R.string.content_description_location_list)
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().semantics(mergeDescendants = false) { contentDescription = cdLocalList},
         contentPadding = PaddingValues(16.dp),
     ) {
         items(locationList) {

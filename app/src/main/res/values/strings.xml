@@ -80,4 +80,6 @@
     <string name="poi_details_title">Point of Interest:</string>
     <string name="poi_details_description">Reminder:</string>
 
+    <string name="content_description_location_list">List of Location Reminders</string>
+
 </resources>

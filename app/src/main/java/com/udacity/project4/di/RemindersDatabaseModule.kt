@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.room.Room
 import com.udacity.project4.locationreminders.data.ReminderDataSource
 import com.udacity.project4.repositories.RemindersLocalRepository
-import com.udacity.project4.repositories.WorldLocationDao
 import com.udacity.project4.repositories.WorldLocationDatabase
 import com.udacity.project4.viewModels.LOCATION_DATABASE_NAME
 import dagger.Module
@@ -19,7 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 
 @Module
 @InstallIn(ViewModelComponent::class)
-object LocationDatabaseModule {
+object RemindersDatabaseModule {
     @Provides
     fun provideLocationDatabase(@ApplicationContext appContext: Context): WorldLocationDatabase =
         Room.databaseBuilder(
