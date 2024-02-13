@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-
 import android.view.Gravity
 import android.widget.Toast
 import android.widget.Toast.makeText
@@ -70,7 +69,6 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory.newCameraPosition
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
-
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
@@ -80,20 +78,19 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.outerspace.luismaps2.R
-import com.udacity.project4.viewModels.GeofenceViewModel
-import com.udacity.project4.viewModels.LONDON_LAT
+import com.udacity.project4.domain.WorldLocation
 import com.udacity.project4.theme.LuisMaps2Theme
+import com.udacity.project4.viewModels.GeofenceViewModel
+import com.udacity.project4.viewModels.LOCATION_REFRESH_PERIOD
+import com.udacity.project4.viewModels.LONDON_LAT
 import com.udacity.project4.viewModels.LONDON_LOCATION
 import com.udacity.project4.viewModels.LONDON_LON
 import com.udacity.project4.viewModels.LocationViewModel
-import com.udacity.project4.domain.WorldLocation
-import com.udacity.project4.viewModels.LOCATION_REFRESH_PERIOD
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 @AndroidEntryPoint
 class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
@@ -167,9 +164,7 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
 
     override fun onResume() {
         super.onResume()
-        runBlocking {
-            locationVM.refreshPoiList()
-        }
+        locationVM.refreshPoiList()
     }
 
     // NOTE: I use these MapParamsInterface and DialogParamsInterface to hoist various
@@ -234,10 +229,8 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                 position = CameraPosition.fromLatLngZoom(initialLocation.getLatLng(), 15F)
             }
             override fun refreshPoiList() {
-                runBlocking {
-                    locationVM.refreshPoiList()
-                    poiListChanged++
-                }
+                locationVM.refreshPoiList()
+                poiListChanged++
             }
 
             override fun getPoiList(): MutableList<WorldLocation> {

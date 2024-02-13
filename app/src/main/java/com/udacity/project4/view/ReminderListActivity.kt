@@ -69,7 +69,7 @@ class ReminderListActivity : ComponentActivity() {
         locationVM = ViewModelProvider(this)[LocationViewModel::class.java]     // since the Activity is annotated with @AndroidEntryPoint, the view models are injected with the ViewModelProvider0
         geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
 
-        val locationParams = object: LocationParamInterface {
+        val params = object: LocationParamInterface {
             override fun deleteLocation(location: WorldLocation) {
                 lifecycleScope.launch(Dispatchers.IO) {
                     locationVM.removeLocation(location)
@@ -91,22 +91,24 @@ class ReminderListActivity : ComponentActivity() {
         }
 
         setContent {
-            val forceRecomposeCount: MutableState<Int> = remember { mutableIntStateOf(0) }
+            ReminderListComposable(params)
+        }
+    }
 
-            fetchLocations(forceRecomposeCount)
-
-            if (forceRecomposeCount.value > 0) {
-                LuisMaps2Theme {
-                    // A surface container using the 'background' color from the theme
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-                        if (locations.isNotEmpty()) {
-                            locationList(locations, locationParams, Modifier)
-                        } else {
-                            emptyLocationsList(locationParams, Modifier)
-                        }
+    @Composable
+    fun ReminderListComposable(locationParams: LocationParamInterface) {
+        val forceRecomposeCount: MutableState<Int> = remember { mutableIntStateOf(0) }
+        fetchLocations(forceRecomposeCount)
+        if (forceRecomposeCount.value > 0) {
+            LuisMaps2Theme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    if (locations.isNotEmpty()) {
+                        locationList(locations, locationParams, Modifier)
+                    } else {
+                        emptyLocationsList(locationParams, Modifier)
                     }
                 }
             }

@@ -10,7 +10,7 @@ import com.udacity.project4.repositories.WorldLocationEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 const val LOCATION_DATABASE_NAME = "location"
@@ -26,17 +26,18 @@ class LocationViewModel
 
     val mutablePoiList: MutableLiveData<MutableList<WorldLocation>> = MutableLiveData()
     val mutableCurrentLocation: MutableLiveData<WorldLocation> = MutableLiveData()
-    val mutableAddedPoi: MutableLiveData<WorldLocation> = MutableLiveData()
-    val mutableDeletedPoi: MutableLiveData<WorldLocation> = MutableLiveData()
 
     var jumpToLocation = true
 
     suspend fun getLocations() = remindersRepo.getLocations()
 
-    suspend fun refreshPoiList() {
-        var resultList: MutableList<WorldLocation> =
-            remindersRepo.getLocations().map { WorldLocation(it) }.toMutableList()
-        mutablePoiList.value = resultList
+    fun refreshPoiList() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val resultList = remindersRepo.getLocations().map { WorldLocation(it) }.toMutableList()
+            withContext(Dispatchers.Main) {
+                mutablePoiList.value = resultList
+            }
+        }
     }
 
     suspend fun addOrUpdateLocation(location: WorldLocation) {
@@ -44,16 +45,14 @@ class LocationViewModel
         if (locationsAt.isNotEmpty()) {
             remindersRepo.updateLocationAt(location.id, location.title, location.description)
         } else {
-            location.id = remindersRepo.insert(WorldLocationEntity(location))
+            location.id = remindersRepo.insert(WorldLocationEntity(location))q
         }
         refreshPoiList()
-        mutableAddedPoi.value = location
     }
 
     suspend fun removeLocation(location: WorldLocation) {
         remindersRepo.deleteLocationAt(location.id)
         refreshPoiList()
-        mutableDeletedPoi.value = location
     }
 
     fun deleteAllLocations(activity:ComponentActivity, geofenceVM: GeofenceViewModel) {
