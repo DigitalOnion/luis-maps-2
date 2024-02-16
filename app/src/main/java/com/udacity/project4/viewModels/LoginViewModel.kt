@@ -17,7 +17,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
-import com.outerspace.luismaps2.R
+import com.udacity.project4.R
 import com.udacity.project4.domain.LoginScreens
 import com.udacity.project4.repositories.EmailLogin
 import com.udacity.project4.repositories.EmailLoginLocalRepository

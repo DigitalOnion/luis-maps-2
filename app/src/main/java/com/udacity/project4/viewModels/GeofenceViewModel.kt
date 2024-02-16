@@ -51,7 +51,7 @@ class GeofenceViewModel: ViewModel() {
             bundle.putString(GEOFENCE_NOTIFICATION_DESCRIPTION_KEY, location.description)
             bundle.putLong(GEOFENCE_NOTIFICATION_ID_KEY, location.id)
             val intent = Intent()
-            intent.action = "com.outerspace.luismaps2"
+            intent.action = "com.udacity.project4"
             intent.setClass(activity.applicationContext, GeofenceBroadcastReceiver::class.java)
             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             intent.putExtras(bundle)

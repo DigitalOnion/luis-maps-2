@@ -1,6 +1,6 @@
 package com.udacity.project4.domain
 
-import com.outerspace.luismaps2.R
+import com.udacity.project4.R
 
 enum class LoginScreens(val loginLabel: Int, val passwordLabel: Int, val buttonLabel: Int) {
     CHOOSE_LOGIN (R.string.login_email, R.string.password_email, R.string.login_button_face),

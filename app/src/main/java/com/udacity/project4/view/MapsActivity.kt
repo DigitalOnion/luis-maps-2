@@ -77,7 +77,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.outerspace.luismaps2.R
+import com.udacity.project4.R
 import com.udacity.project4.domain.WorldLocation
 import com.udacity.project4.theme.LuisMaps2Theme
 import com.udacity.project4.viewModels.GeofenceViewModel

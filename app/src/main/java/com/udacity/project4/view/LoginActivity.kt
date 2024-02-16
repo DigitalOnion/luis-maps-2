@@ -12,7 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
-import com.outerspace.luismaps2.R
+import com.udacity.project4.R
 import com.udacity.project4.domain.LOG_TAG
 import com.udacity.project4.viewModels.LocationViewModel
 import com.udacity.project4.viewModels.PermissionsViewModel

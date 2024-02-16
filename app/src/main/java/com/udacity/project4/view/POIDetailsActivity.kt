@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.os.bundleOf
-import com.outerspace.luismaps2.R
+import com.udacity.project4.R
 import com.udacity.project4.view.ui.theme.LuisMaps2Theme
 import com.udacity.project4.viewModels.GEOFENCE_NOTIFICATION_DESCRIPTION_KEY
 import com.udacity.project4.viewModels.GEOFENCE_NOTIFICATION_ID_KEY

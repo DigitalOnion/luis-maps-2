@@ -23,9 +23,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,21 +33,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.Red
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.outerspace.luismaps2.R
+import com.udacity.project4.R
 import com.udacity.project4.domain.WorldLocation
 import com.udacity.project4.theme.LuisMaps2Theme
 import com.udacity.project4.viewModels.GeofenceViewModel
 import com.udacity.project4.viewModels.LocationViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -58,67 +59,67 @@ interface LocationParamInterface {
     fun toastMessage(message: String)
 }
 
+const val LIST_OF_REMINDERS = "list-of-reminders"
+const val REMINDER_LIST_CARD = "reminder-list-card"
+
 @AndroidEntryPoint
 class ReminderListActivity : ComponentActivity() {
     private lateinit var locationVM: LocationViewModel
     private lateinit var geofenceVM: GeofenceViewModel
-    private lateinit var locations: List<WorldLocation>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         locationVM = ViewModelProvider(this)[LocationViewModel::class.java]     // since the Activity is annotated with @AndroidEntryPoint, the view models are injected with the ViewModelProvider0
         geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
 
-        val params = object: LocationParamInterface {
-            override fun deleteLocation(location: WorldLocation) {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    locationVM.removeLocation(location)
-                    geofenceVM.remove(this@ReminderListActivity, location)
-                }
-            }
-
-            override fun editLocation(location: WorldLocation) {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    locationVM.addOrUpdateLocation(location)
-                }
-            }
-            override fun navigateBack() {
-                this@ReminderListActivity.finish()
-            }
-            override fun toastMessage(message: String) {
-                Toast.makeText(this@ReminderListActivity.applicationContext, message, Toast.LENGTH_SHORT).show()
-            }
-        }
-
         setContent {
-            ReminderListComposable(params)
-        }
-    }
+            val listHasChanged = remember { mutableStateOf(true) }
+            val locations: MutableState<List<WorldLocation>> = remember { mutableStateOf(emptyList()) }
 
-    @Composable
-    fun ReminderListComposable(locationParams: LocationParamInterface) {
-        val forceRecomposeCount: MutableState<Int> = remember { mutableIntStateOf(0) }
-        fetchLocations(forceRecomposeCount)
-        if (forceRecomposeCount.value > 0) {
+            locationVM.mutablePoiList.observe(this as LifecycleOwner) {
+                listHasChanged.value = true
+            }
+
+            val params = object: LocationParamInterface {
+                override fun deleteLocation(location: WorldLocation) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        locationVM.removeLocation(location)
+                        geofenceVM.remove(this@ReminderListActivity, location)
+                    }
+                }
+
+                override fun editLocation(location: WorldLocation) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        locationVM.addOrUpdateLocation(location)
+                    }
+                }
+                override fun navigateBack() {
+                    this@ReminderListActivity.finish()
+                }
+                override fun toastMessage(message: String) {
+                    Toast.makeText(this@ReminderListActivity.applicationContext, message, Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            if (listHasChanged.value) {
+                LaunchedEffect(listHasChanged, locations) {
+                    locations.value = locationVM.getLocations().map{ WorldLocation(it) }
+                    listHasChanged.value = false
+                }
+            }
+
             LuisMaps2Theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    if (locations.isNotEmpty()) {
-                        locationList(locations, locationParams, Modifier)
+                    if (locations.value.isNotEmpty()) {
+                        locationList(locations, params, Modifier)
                     } else {
-                        emptyLocationsList(locationParams, Modifier)
+                        emptyLocationsList(params, Modifier)
                     }
                 }
             }
-        }
-    }
-
-    private fun fetchLocations(forceRecompose: MutableState<Int>) {
-        CoroutineScope(Dispatchers.IO).launch {
-            locations = locationVM.getLocations().map{ WorldLocation(it) }
-            forceRecompose.value += 1
         }
     }
 }
@@ -145,13 +146,18 @@ private fun emptyLocationsList(params: LocationParamInterface, modifier:Modifier
 }
 
 @Composable
-fun locationList(locationList: List<WorldLocation>, params: LocationParamInterface, modifier: Modifier = Modifier) {
-    val cdLocalList = stringResource(R.string.content_description_location_list)
+fun locationList(locations: MutableState<List<WorldLocation>>,
+                 params: LocationParamInterface,
+                 modifier: Modifier = Modifier) {
+    val contentDescription = stringResource(R.string.content_description_location_list)
     LazyColumn(
-        modifier = modifier.fillMaxSize().semantics(mergeDescendants = false) { contentDescription = cdLocalList},
+        modifier = modifier
+            .fillMaxSize()
+            .testTag(LIST_OF_REMINDERS)
+            .semantics { this.contentDescription = contentDescription},
         contentPadding = PaddingValues(16.dp),
     ) {
-        items(locationList) {
+        items(locations.value) {
             holder(it, params, modifier)
         }
     }
@@ -169,7 +175,9 @@ private fun holder(location: WorldLocation, params: LocationParamInterface, modi
         shape = MaterialTheme.shapes.medium,
         modifier = modifier
             .padding(bottom = 8.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .testTag(REMINDER_LIST_CARD)
+            .semantics (mergeDescendants = false) { contentDescription = location.description },
         onClick = { showIcons.value = !showIcons.value}
     )
     {
@@ -274,13 +282,7 @@ fun holderPreview() {
 @Preview(showBackground = true)
 @Composable
 fun reminderListPreview() {
-    val locations = listOf(
-        WorldLocation(0, 19.4326, 99.1332, "Mexico City", "Extremely large city"), // Mexico City. Mexico
-        WorldLocation(0, 20.9674, 89.5926, "Merida, Yucatán", "Extremely hot city"), // Merida, Yucatan. Mexico
-        WorldLocation(0, 33.7488, 84.3877, "Atlanta, GA", "My city"), // Atlanta, Georgia, US
-        WorldLocation(0, 19.5438, 96.9102, "Xalapa", "Xalapa is a cultural city. It has theaters and Universities. It is the capital of Veracruz"),  // Xalapa, Veracruz. Mexico
-        WorldLocation(0, 25.7617, 80.1918, "Miami", "Miami is a coastal touristic city, famous for art, like movies and music, and night life."), // Miami, FL, US
-    )
+    val locations = remember { mutableStateOf(getPreviewLocations()) }
 
     val params = object: LocationParamInterface {
         override fun deleteLocation(location: WorldLocation) {}
@@ -292,4 +294,14 @@ fun reminderListPreview() {
     LuisMaps2Theme {
         locationList(locations, params)
     }
+}
+
+private fun getPreviewLocations(): List<WorldLocation> {
+    return listOf(
+        WorldLocation(0, 19.4326, 99.1332, "Mexico City", "Extremely large city"),
+        WorldLocation(0, 20.9674, 89.5926, "Merida, Yucatán", "Extremely hot city"),
+        WorldLocation(0, 33.7488, 84.3877, "Atlanta, GA", "My city"), // Atlanta, Georgia, US
+        WorldLocation(0, 19.5438, 96.9102, "Xalapa", "Xalapa is a cultural city. It has theaters and Universities. It is the capital of Veracruz"),
+        WorldLocation(0, 25.7617, 80.1918, "Miami", "Miami is a coastal touristic city, famous for art, like movies and music, and night life."),
+    )
 }

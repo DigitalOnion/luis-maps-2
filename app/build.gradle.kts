@@ -1,7 +1,7 @@
 // NOTE:
 // I created this project using Android Studio Giraffe. I also wanted
 // to learn and practice with Compose. When I added the Room Database
-// the project would no longer compile. I followed the Android documentation
+0// the project would no longer compile. I followed the Android documentation
 // added Room using the bom and enabling KSP. It wouldn't work.
 //
 // after researching for three days. I came across this article:
@@ -29,17 +29,21 @@ plugins {
 }
 
 android {
-    namespace = "com.outerspace.luismaps2"
+    namespace = "com.udacity.project4"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.outerspace.luismaps2"
+        applicationId = "com.udacity.project4"
         minSdk = 29
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // This was replaced when I configured Hilt to do the Instrumentation Tests:
+        //      testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // reference: https://developer.android.com/training/dependency-injection/hilt-testing#testing-dependencies
+        testInstrumentationRunner = "com.udacity.project4.CustomTestRunner"
+
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -138,10 +142,6 @@ dependencies {
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.50")
     kaptTest("com.google.dagger:hilt-compiler:2.50")
 
-    // For local unit tests
-//    testImplementation("com.google.dagger:hilt-android-testing:2.50")
-//    kaptTest("com.google.dagger:hilt-compiler:2.50")
-
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.50")
     kaptAndroidTest("com.google.dagger:hilt-android-compiler:2.50")
 
@@ -163,4 +163,9 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit-ktx:1.1.5")
     androidTestImplementation("androidx.test.ext:truth:1.5.0")
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
+}
+
+// reference: https://dagger.dev/hilt/gradle-setup.html#hilt-test-dependencies
+kapt {
+    correctErrorTypes = true
 }

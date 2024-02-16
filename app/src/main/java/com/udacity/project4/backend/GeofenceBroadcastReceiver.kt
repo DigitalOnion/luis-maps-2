@@ -19,7 +19,7 @@ import androidx.core.os.bundleOf
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofenceStatusCodes
 import com.google.android.gms.location.GeofencingEvent
-import com.outerspace.luismaps2.R
+import com.udacity.project4.R
 import com.udacity.project4.domain.LOG_TAG
 import com.udacity.project4.view.POIDetailsActivity
 import com.udacity.project4.viewModels.GEOFENCE_NOTIFICATION_DESCRIPTION_KEY

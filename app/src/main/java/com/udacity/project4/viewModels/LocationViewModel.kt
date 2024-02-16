@@ -5,7 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.udacity.project4.domain.WorldLocation
-import com.udacity.project4.locationreminders.data.ReminderDataSource
+import com.udacity.project4.repositories.RemindersLocalRepository
 import com.udacity.project4.repositories.WorldLocationEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +21,7 @@ val LONDON_LOCATION = WorldLocation (0, 51.5072, 0.1276, "London", "Great City o
 
 @HiltViewModel
 class LocationViewModel
-    @Inject constructor(private val remindersRepo: ReminderDataSource)
+    @Inject constructor(private val remindersRepo: RemindersLocalRepository)
     : ViewModel() {
 
     val mutablePoiList: MutableLiveData<MutableList<WorldLocation>> = MutableLiveData()
@@ -45,7 +45,7 @@ class LocationViewModel
         if (locationsAt.isNotEmpty()) {
             remindersRepo.updateLocationAt(location.id, location.title, location.description)
         } else {
-            location.id = remindersRepo.insert(WorldLocationEntity(location))q
+            location.id = remindersRepo.insert(WorldLocationEntity(location))
         }
         refreshPoiList()
     }
