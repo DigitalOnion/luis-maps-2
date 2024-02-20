@@ -101,7 +101,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 
-
 @AndroidEntryPoint
 class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
     private lateinit var permissionsVM: PermissionsViewModel

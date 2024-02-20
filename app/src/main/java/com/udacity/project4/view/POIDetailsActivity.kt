@@ -47,11 +47,8 @@ class POIDetailsActivity : ComponentActivity() {
     }
 }
 
-
-
 @Composable
 fun showReminder(bundle: Bundle, modifier: Modifier = Modifier) {
-    val reminderId = bundle.getLong(GEOFENCE_NOTIFICATION_ID_KEY, 0)!!
     val reminderTitle = bundle.getString(GEOFENCE_NOTIFICATION_TITLE_KEY, NO_TITLE)
     val reminderDescription = bundle.getString(GEOFENCE_NOTIFICATION_DESCRIPTION_KEY, NO_DESCRIPTION)
 
@@ -76,7 +73,7 @@ fun showReminder(bundle: Bundle, modifier: Modifier = Modifier) {
 
 @Composable
 fun showReminderError() {
-
+    // empty
 }
 
 @Preview(showBackground = true)
