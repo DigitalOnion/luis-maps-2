@@ -10,6 +10,9 @@
     <string name="all_locations_were_deleted">All Locations were deleted</string>
     <string name="no_locations_deleted">No locations were deleted</string>
 
+    <string name="authentication_failed">Login was cancelled or failed. Please try again</string>
+    <string name="authentication_signed_out">You have signed out!</string>
+    <string name="authentication_sign_out">Sign Out</string>
     <string name="login_menu">Login menu</string>
     <string name="cancel_button_face">Cancel</string>
     <string name="save_button_face">Save</string>
@@ -50,7 +53,6 @@
     <string name="sign_on_password">New account password</string>
     <string name="sign_on_password_email_instructions">Enter the password for the new account</string>
 
-
     <string name="reminder_title_label">Reminder\'s title</string>
     <string name="reminder_title_placeholder">Enter the reminder\'s title</string>
     <string name="reminder_description_label">Reminder\'s description</string>
@@ -81,5 +83,11 @@
     <string name="poi_details_description">Reminder:</string>
 
     <string name="content_description_location_list">List of Location Reminders</string>
+
+    <string name="facebook_app_id">966783354861155</string>
+    <string name="fb_login_protocol_scheme">fb966783354861155</string>
+    <string name="facebook_client_token">56789</string>
+
+    <string name="wait_to_load">Loading… please wait</string>
 
 </resources>

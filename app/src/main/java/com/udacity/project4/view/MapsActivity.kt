@@ -1,9 +1,11 @@
 package com.udacity.project4.view
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.widget.Toast
 import android.widget.Toast.makeText
@@ -23,6 +25,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SnapshotMutationPolicy
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -78,6 +83,7 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.udacity.project4.R
+import com.udacity.project4.domain.LOG_TAG
 import com.udacity.project4.domain.WorldLocation
 import com.udacity.project4.theme.LuisMaps2Theme
 import com.udacity.project4.viewModels.GeofenceViewModel
@@ -86,14 +92,19 @@ import com.udacity.project4.viewModels.LONDON_LAT
 import com.udacity.project4.viewModels.LONDON_LOCATION
 import com.udacity.project4.viewModels.LONDON_LON
 import com.udacity.project4.viewModels.LocationViewModel
+import com.udacity.project4.viewModels.LoginViewModel
+import com.udacity.project4.viewModels.PermissionsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
+
 
 @AndroidEntryPoint
 class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
+    private lateinit var permissionsVM: PermissionsViewModel
     private lateinit var locationVM: LocationViewModel
     private lateinit var geofenceVM: GeofenceViewModel
     private lateinit var initialLocation: WorldLocation
@@ -106,12 +117,24 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         super.onCreate(savedInstanceState)
         locationVM = ViewModelProvider(this)[LocationViewModel::class.java]
         geofenceVM = ViewModelProvider(this)[GeofenceViewModel::class.java]
+        permissionsVM = ViewModelProvider(this)[PermissionsViewModel::class.java]
 
-        val sharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
-        val initialLatitude = sharedPreferences.getString(LONDON_LAT, LONDON_LOCATION.lat.toString())!!.toDouble()
-        val initialLongitude = sharedPreferences.getString(LONDON_LON, LONDON_LOCATION.lon.toString())!!.toDouble()
-        initialLocation = WorldLocation(initialLatitude, initialLongitude)
-
+        permissionsVM.mutablePermissionMap.observe(this) { permissionMap: Map<String, Boolean> ->
+            Log.d(LOG_TAG, permissionMap.toString())
+            if (permissionMap[Manifest.permission.ACCESS_FINE_LOCATION] == true &&
+                permissionMap[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+            ) {
+                permissionsVM.requestBackgroundPermissions()
+            } else if (permissionMap[Manifest.permission.ACCESS_BACKGROUND_LOCATION] == true) {
+                val sharedPreferences = this.getPreferences(Context.MODE_PRIVATE)
+                val initialLatitude = sharedPreferences.getString(LONDON_LAT, LONDON_LOCATION.lat.toString())!!.toDouble()
+                val initialLongitude = sharedPreferences.getString(LONDON_LON, LONDON_LOCATION.lon.toString())!!.toDouble()
+                initialLocation = WorldLocation(initialLatitude, initialLongitude)
+                permissionsVM.mutableAllPermissionsGranted.value = true
+            }
+        }
+        permissionsVM.weakActivity = WeakReference(this)   // triggers permission requests
+        permissionsVM.requestLocationPermissions()
 
         setContent {
             LuisMaps2Theme {
@@ -119,12 +142,14 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    mapsScreenScaffold()
+                    if (permissionsVM.mutableAllPermissionsGranted.observeAsState().value == true)
+                        mapsScaffoldScreen(Modifier)
+                    else
+                        mapsWaitScreen(Modifier)
                 }
             }
         }
     }
-
 
     var currentLocation: WorldLocation? = null
 
@@ -158,13 +183,12 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                     locationVM.mutableCurrentLocation.value = wlb
                 }
             }
-
         }
     }
 
     override fun onResume() {
         super.onResume()
-        locationVM.refreshPoiList()
+        if ( this::locationVM.isInitialized ) locationVM.refreshPoiList()
     }
 
     // NOTE: I use these MapParamsInterface and DialogParamsInterface to hoist various
@@ -186,9 +210,14 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
         fun showInputPoiDialog(show: Boolean)
     }
 
+    @Composable
+    private fun mapsWaitScreen(modifier: Modifier = Modifier) {
+        maps2SplashScreen()
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun mapsScreenScaffold(modifier: Modifier = Modifier) {
+    private fun mapsScaffoldScreen(modifier: Modifier = Modifier) {
         fun policy(): SnapshotMutationPolicy<WorldLocation> =
             object : SnapshotMutationPolicy<WorldLocation> {
                 override fun equivalent(a: WorldLocation, b: WorldLocation): Boolean = a == b
@@ -301,7 +330,8 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                         IconButton(onClick = { showMenu = !showMenu }) {
                             Icon(imageVector = Icons.Default.Menu, stringResource(id = R.string.login_menu))
                         }
-                        DropdownMenu(expanded = showMenu,
+                        DropdownMenu(
+                            expanded = showMenu,
                             onDismissRequest = { showMenu = false },
                         ) {
                             DropdownMenuItem(text = { Text(stringResource(R.string.reminder_list_menu)) },
@@ -314,6 +344,12 @@ class MapsActivity : ComponentActivity() /* , OnMapReadyCallback*/ {
                                 onClick = {
                                     showMenu = false
                                     mapParams.launchSnackBar()
+                                }
+                            )
+                            Divider(modifier = modifier, thickness = 1.dp)
+                            DropdownMenuItem(text = { Text(stringResource(R.string.authentication_sign_out))},
+                                onClick = {
+                                    LoginViewModel.signOut(this@MapsActivity)
                                 }
                             )
                         }

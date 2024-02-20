@@ -32,7 +32,6 @@
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -48,12 +47,12 @@
             android:label="@string/title_activity_locations"
             android:theme="@style/Theme.LuisMaps2" />
 
-        <!-- NotificationTargetActivity is a special activity.
+        <!-- NotificationTargetActivity.
            it only serves as a target to notifications, showing
            the Reminder whose geofence was entered and dwell.
                 - taskAffinity -> prevents it to become a default activity
                 - excludeFromRecents -> prevent is to be part of the Recent Screens, cannot navigate to it
-           -->
+       -->
         <activity
             android:name="com.udacity.project4.view.POIDetailsActivity"
             android:exported="false"

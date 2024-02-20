@@ -16,7 +16,9 @@ fun checkPermissions(context: Context) =
     ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
 class PermissionsViewModel: ViewModel() {
-    val mutablePermissionGranted: MutableLiveData<Map<String, Boolean>> = MutableLiveData()
+    val mutablePermissionMap: MutableLiveData<Map<String, Boolean>> = MutableLiveData()
+    val mutableAllPermissionsGranted: MutableLiveData<Boolean> = MutableLiveData(false)
+
     private lateinit var activityResultLauncher: ActivityResultLauncher<Array<String>>
 
     var weakActivity: WeakReference<ComponentActivity> = WeakReference(null)
@@ -25,7 +27,7 @@ class PermissionsViewModel: ViewModel() {
             val activity = wActivity.get() ?: return
             val reqPermissions = ActivityResultContracts.RequestMultiplePermissions()
             activityResultLauncher = activity.registerForActivityResult(reqPermissions) {
-                if (it.isNotEmpty()) mutablePermissionGranted.value = it
+                if (it.isNotEmpty()) mutablePermissionMap.value = it
             }
         }
 

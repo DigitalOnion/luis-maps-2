@@ -1,7 +1,7 @@
 // NOTE:
 // I created this project using Android Studio Giraffe. I also wanted
 // to learn and practice with Compose. When I added the Room Database
-0// the project would no longer compile. I followed the Android documentation
+// the project would no longer compile. I followed the Android documentation
 // added Room using the bom and enabling KSP. It wouldn't work.
 //
 // after researching for three days. I came across this article:
@@ -47,6 +47,10 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // add other supported languages "en" = English, "es" = Español, etc.
+        // https://www.loc.gov/standards/iso639-2/php/code_list.php
+        resourceConfigurations += listOf("en", "es")
     }
 
     buildTypes {
@@ -102,7 +106,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.runtime:runtime-livedata:1.6.0")
+    implementation("androidx.compose.runtime:runtime-livedata:1.6.1")
 
     implementation("com.google.dagger:hilt-android:2.50")
     kapt("com.google.dagger:hilt-compiler:2.50")
@@ -119,7 +123,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.ar:core:1.41.0")
     implementation(platform("androidx.compose:compose-bom:2023.03.00"))
-    implementation("androidx.navigation:navigation-runtime-ktx:2.7.6")
+    implementation("androidx.navigation:navigation-runtime-ktx:2.7.7")
     implementation(platform("androidx.compose:compose-bom:2023.03.00"))
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
     debugImplementation("androidx.compose.ui:ui-tooling")
@@ -134,6 +138,13 @@ dependencies {
 
     // for location services
     implementation("com.google.android.gms:play-services-location:21.1.0")
+
+    // for FirebaseUI Auth
+    implementation("com.firebaseui:firebase-ui-auth:8.0.2")
+
+    // Required only if Facebook login support is required
+    // Find the latest Facebook SDK releases here: https://github.com/facebook/facebook-android-sdk/blob/master/CHANGELOG.md
+    implementation("com.facebook.android:facebook-login:8.1.0")
 
     // -------------------
 
